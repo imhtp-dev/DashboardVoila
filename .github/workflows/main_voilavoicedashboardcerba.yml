@@ -56,7 +56,9 @@ jobs:
             next.config.ts
             tsconfig.json
             postcss.config.mjs
+            eslint.config.mjs
             components.json
+            .env.production
             node_modules
 
   deploy:
