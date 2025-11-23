@@ -45,10 +45,18 @@ jobs:
           name: nextjs-app
           path: |
             .next
+            app
+            components
+            lib
+            hooks
+            types
             public
             package.json
             package-lock.json
             next.config.ts
+            tsconfig.json
+            postcss.config.mjs
+            components.json
             node_modules
 
   deploy:
