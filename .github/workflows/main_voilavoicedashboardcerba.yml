@@ -59,7 +59,6 @@ jobs:
             eslint.config.mjs
             components.json
             .env.production
-            node_modules
 
   deploy:
     runs-on: ubuntu-latest
@@ -89,4 +88,4 @@ jobs:
       - name: Verify deployment
         run: |
           echo "✅ Deployment complete!"
-          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba.azurewebsites.net"
+          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net"
