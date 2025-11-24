@@ -73,12 +73,21 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Configure Azure to skip Oryx build
+        run: |
+          az webapp config appsettings set \
+            --name voilavoicedashboardcerba \
+            --resource-group voilavoicedashboardnew \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+            WEBSITE_NODE_DEFAULT_VERSION=22-lts
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
+          startup-command: 'node server.js'
 
       - name: Verify deployment
         run: |
