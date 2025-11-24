@@ -43,12 +43,11 @@ jobs:
         run: |
           # Copy standalone server (already has its own node_modules)
           cp -r .next/standalone ./deploy
-          # Replace incomplete .next with full build artifacts
-          rm -rf ./deploy/.next
-          cp -r .next ./deploy/.next
+          # Copy static files to the correct location
+          mkdir -p ./deploy/.next
+          cp -r .next/static ./deploy/.next/static
           # Copy public folder
           cp -r public ./deploy/public
-
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
@@ -71,18 +70,16 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_15FFD3170FD2483CB61BAB8949FBF916 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FD9A980E99EE47E6B6214326D644841A }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_15EA8C0E8E0848A18C8706FB31C4CA4D }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'voilavoicedashboardcerba1'
+          app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
 
       - name: Verify deployment
         run: |
           echo "✅ Deployment complete!"
-          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba1-gaafdfhpawcwa5ek.francecentral-01.azurewebsites.net/login"
+          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net"
