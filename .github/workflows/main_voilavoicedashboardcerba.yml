@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Remove local .env files to prevent conflicts
+        run: rm -f .env .env.local .env.development.local
+
       - name: Build Next.js application
         run: npm run build
         env:
