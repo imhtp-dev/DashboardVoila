@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   output: 'standalone', // Enable standalone build for Docker
   typescript:{
     ignoreBuildErrors:true
+  },
+  // Disable Sharp image optimization to prevent Bus error on Azure
+  images: {
+    unoptimized: true
   }
 };
 
