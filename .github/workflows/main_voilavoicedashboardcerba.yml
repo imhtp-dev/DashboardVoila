@@ -41,13 +41,12 @@ jobs:
 
       - name: Prepare standalone deployment
         run: |
-          # Copy standalone server (already has its own node_modules)
-          cp -r .next/standalone ./deploy
-          # Copy static files to the correct location
-          mkdir -p ./deploy/.next
-          cp -r .next/static ./deploy/.next/static
-          # Copy public folder
-          cp -r public ./deploy/public
+          # The standalone output is in .next/standalone and already contains server.js
+          # We just need to add the static files and public folder to it
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+          # Now move the complete standalone folder to deploy
+          mv .next/standalone ./deploy
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
