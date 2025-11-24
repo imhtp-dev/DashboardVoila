@@ -39,16 +39,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://yxqconubtqdskcxiobsp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cWNvbnVidHFkc2tjeGlvYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNjMzNzYsImV4cCI6MjA3ODkzOTM3Nn0.-JnEq6PTC-xvYL6ePSVcCdQoYMU6gIlgsR6z5fSI63Y
 
-      - name: Create deployment package (exclude node_modules)
-        run: |
-          mkdir -p deploy-package
-          rsync -av --exclude='node_modules' --exclude='.git' --exclude='deploy-package' . deploy-package/
-
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: deploy-package
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -74,7 +69,6 @@ jobs:
         with:
           app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
-          startup-command: 'npm install && npm start'
 
       - name: Verify deployment
         run: |
