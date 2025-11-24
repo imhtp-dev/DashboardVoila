@@ -39,11 +39,31 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://yxqconubtqdskcxiobsp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cWNvbnVidHFkc2tjeGlvYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNjMzNzYsImV4cCI6MjA3ODkzOTM3Nn0.-JnEq6PTC-xvYL6ePSVcCdQoYMU6gIlgsR6z5fSI63Y
 
+      - name: Prepare standalone deployment package
+        run: |
+          # The .next/standalone folder contains server.js and minimal dependencies
+          # We need to add static assets and public files to complete it
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
+          # Create a minimal package.json with only start script (no build script)
+          # This prevents Azure from trying to rebuild
+          cat > .next/standalone/package.json << 'EOF'
+          {
+            "name": "nextjs-app",
+            "version": "1.0.0",
+            "private": true,
+            "scripts": {
+              "start": "node server.js"
+            }
+          }
+          EOF
+
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: .
+          path: .next/standalone
 
   deploy:
     runs-on: ubuntu-latest
