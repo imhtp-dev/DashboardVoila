@@ -39,11 +39,49 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://yxqconubtqdskcxiobsp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cWNvbnVidHFkc2tjeGlvYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNjMzNzYsImV4cCI6MjA3ODkzOTM3Nn0.-JnEq6PTC-xvYL6ePSVcCdQoYMU6gIlgsR6z5fSI63Y
 
+      - name: Prepare standalone deployment
+        run: |
+          # Copy standalone server
+          cp -r .next/standalone ./deploy
+          # Copy static files
+          cp -r .next/static ./deploy/.next/static
+          # Copy public folder
+          cp -r public ./deploy/public
+          # Create custom server.js that uses standalone
+          cat > ./deploy/server.js << 'EOF'
+          const { createServer } = require('http')
+          const { parse } = require('url')
+          const next = require('next')
+
+          const dev = false
+          const hostname = '0.0.0.0'
+          const port = process.env.PORT || 8080
+
+          const app = next({ dev, hostname, port, dir: __dirname })
+          const handle = app.getRequestHandler()
+
+          app.prepare().then(() => {
+            createServer(async (req, res) => {
+              try {
+                const parsedUrl = parse(req.url, true)
+                await handle(req, res, parsedUrl)
+              } catch (err) {
+                console.error('Error occurred handling', req.url, err)
+                res.statusCode = 500
+                res.end('internal server error')
+              }
+            }).listen(port, (err) => {
+              if (err) throw err
+              console.log(`> Ready on http://${hostname}:${port}`)
+            })
+          })
+          EOF
+
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: .
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
@@ -69,6 +107,7 @@ jobs:
         with:
           app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
+          startup-command: 'node server.js'
 
       - name: Verify deployment
         run: |
