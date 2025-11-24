@@ -43,22 +43,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: |
-            .next
-            app
-            components
-            lib
-            hooks
-            types
-            public
-            package.json
-            package-lock.json
-            next.config.ts
-            tsconfig.json
-            postcss.config.mjs
-            eslint.config.mjs
-            components.json
-            .env.production
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -84,7 +69,6 @@ jobs:
         with:
           app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
-          startup-command: 'npm install --production && npm start'
 
       - name: Verify deployment
         run: |
