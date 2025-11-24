@@ -73,21 +73,30 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configure Azure to skip Oryx build
+      - name: Create deployment package
+        run: |
+          cd $GITHUB_WORKSPACE
+          zip -r deploy.zip . -x ".git/*" ".github/*"
+
+      - name: Configure Azure for RUN_FROM_PACKAGE deployment
         run: |
           az webapp config appsettings set \
             --name voilavoicedashboardcerba \
             --resource-group voilavoicedashboardnew \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false \
-            WEBSITE_NODE_DEFAULT_VERSION=22-lts
+            --settings WEBSITE_RUN_FROM_PACKAGE=1 \
+            SCM_DO_BUILD_DURING_DEPLOYMENT=false
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
-        with:
-          app-name: 'voilavoicedashboardcerba'
-          slot-name: 'Production'
-          startup-command: 'node server.js'
+          az webapp config set \
+            --name voilavoicedashboardcerba \
+            --resource-group voilavoicedashboardnew \
+            --startup-file "node server.js"
+
+      - name: Deploy ZIP package to Azure
+        run: |
+          az webapp deployment source config-zip \
+            --resource-group voilavoicedashboardnew \
+            --name voilavoicedashboardcerba \
+            --src deploy.zip
 
       - name: Verify deployment
         run: |
