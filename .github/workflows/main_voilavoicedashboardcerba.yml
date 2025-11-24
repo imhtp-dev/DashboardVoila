@@ -12,8 +12,8 @@ on:
 
 env:
   DOCKER_IMAGE: rudyimhtpdev/voilavoicedashboard
-  AZURE_WEBAPP_NAME: voilavoicedashboardcerba
-  RESOURCE_GROUP: voilavoicedashboardnew
+  AZURE_WEBAPP_NAME: voilavoicedashboardcerba1
+  RESOURCE_GROUP: voiladashboard1
 
 jobs:
   build-and-push:
@@ -91,7 +91,7 @@ jobs:
         run: |
           echo "✅ Docker container deployed successfully!"
           echo "🐳 Docker Image: ${{ env.DOCKER_IMAGE }}:latest"
-          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net/login"
+          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba1-gaafdfhpawcwa5ek.francecentral-01.azurewebsites.net/login"
           echo ""
           echo "📝 Next steps:"
           echo "1. Wait 2-3 minutes for container to start"
