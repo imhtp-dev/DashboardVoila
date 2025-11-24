@@ -41,12 +41,16 @@ jobs:
 
       - name: Prepare standalone deployment
         run: |
-          # The standalone output is in .next/standalone and already contains server.js
-          # We just need to add the static files and public folder to it
-          cp -r public .next/standalone/public
-          cp -r .next/static .next/standalone/.next/static
-          # Now move the complete standalone folder to deploy
-          mv .next/standalone ./deploy
+          # Copy the standalone server
+          cp -r .next/standalone ./deploy
+          # Copy the entire .next folder (not just static) for build metadata
+          mkdir -p ./deploy/.next
+          cp -r .next/static ./deploy/.next/static
+          cp -r .next/server ./deploy/.next/server
+          cp .next/build-id ./deploy/.next/build-id || true
+          cp .next/package.json ./deploy/.next/package.json || true
+          # Copy public folder
+          cp -r public ./deploy/public
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
