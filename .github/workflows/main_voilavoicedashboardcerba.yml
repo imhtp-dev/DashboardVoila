@@ -77,7 +77,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'voilavoicedashboardcerba'
+          app-name: 'voilavoicedashboardcerba1'
           slot-name: 'Production'
 
       - name: Verify deployment
