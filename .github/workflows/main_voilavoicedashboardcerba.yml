@@ -44,18 +44,16 @@ jobs:
 
       - name: Prepare standalone deployment
         run: |
-          # Copy standalone server (already has its own node_modules)
-          cp -r .next/standalone ./deploy
-          # Copy static files to the correct location
-          mkdir -p ./deploy/.next
-          cp -r .next/static ./deploy/.next/static
-          # Copy public folder
-          cp -r public ./deploy/public
+          # Copy static assets directly into standalone folder (Next.js requirement)
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: deploy
+          path: .next/standalone
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
