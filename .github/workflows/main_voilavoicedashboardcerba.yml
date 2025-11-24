@@ -84,6 +84,7 @@ jobs:
         with:
           app-name: 'voilavoicedashboardcerba'
           slot-name: 'Production'
+          startup-command: 'npm install --production && npm start'
 
       - name: Verify deployment
         run: |
