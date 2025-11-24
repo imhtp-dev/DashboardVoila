@@ -83,4 +83,4 @@ jobs:
       - name: Verify deployment
         run: |
           echo "✅ Deployment complete!"
-          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net"
+          echo "🌐 Dashboard URL: voilavoicedashboardcerba1-gaafdfhpawcwa5ek.francecentral-01.azurewebsites.net/login"
