@@ -43,7 +43,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-app
-          path: .
+          path: |
+            .next
+            app
+            components
+            lib
+            hooks
+            types
+            public
+            package.json
+            package-lock.json
+            next.config.ts
+            node_modules
 
   deploy:
     runs-on: ubuntu-latest
