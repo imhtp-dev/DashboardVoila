@@ -81,5 +81,5 @@ jobs:
 
       - name: Verify deployment
         run: |
-          echo "✅ Deployment complete!"
-          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net"
+          echo "✅ Deployment complete with Supabase integration!"
+          echo "🌐 Dashboard URL: https://voilavoicedashboardcerba-dzdch8bhcddzdjak.francecentral-01.azurewebsites.net/login"
