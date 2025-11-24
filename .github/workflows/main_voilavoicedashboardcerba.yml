@@ -43,9 +43,9 @@ jobs:
         run: |
           # Copy standalone server (already has its own node_modules)
           cp -r .next/standalone ./deploy
-          # Copy static files to the correct location
-          mkdir -p ./deploy/.next
-          cp -r .next/static ./deploy/.next/static
+          # Replace incomplete .next with full build artifacts
+          rm -rf ./deploy/.next
+          cp -r .next ./deploy/.next
           # Copy public folder
           cp -r public ./deploy/public
 
