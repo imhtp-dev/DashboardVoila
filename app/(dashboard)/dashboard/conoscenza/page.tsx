@@ -36,19 +36,22 @@ import {
   Filter,
   Loader2,
 } from "lucide-react";
-import { qaApi, dashboardApi, type QAItem, type Region } from "@/lib/api-client";
+import { qaApi, dashboardApi, getCurrentUser, type QAItem, type Region } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export default function ConoscenzaPage() {
   const [selectedRegion, setSelectedRegion] = useState("");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [qaRegion, setQaRegion] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("created_at_desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [alert, setAlert] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  
+  const [userRole, setUserRole] = useState<string>("");
+  const [userRegion, setUserRegion] = useState<string>("");
+
   // Real data state
   const [qaEntries, setQaEntries] = useState<QAItem[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -60,6 +63,7 @@ export default function ConoscenzaPage() {
   // Load regions on mount
   useEffect(() => {
     loadRegions();
+    loadUserRole();
   }, []);
 
   // Load Q&A when region changes
@@ -71,11 +75,28 @@ export default function ConoscenzaPage() {
 
   const loadRegions = async () => {
     try {
-      const data = await dashboardApi.getRegions();
+      // Use qaApi.getRegions() which fetches from qa_entries table
+      const data = await qaApi.getRegions();
       setRegions(data);
+      console.log('🔍 DEBUG loadRegions - Loaded regions:', data);
     } catch (err) {
       console.error("Error loading regions:", err);
       showAlert("Errore nel caricamento delle regioni", "error");
+    }
+  };
+
+  const loadUserRole = () => {
+    try {
+      const userData = getCurrentUser();
+      console.log('🔍 DEBUG loadUserRole - userData:', userData);
+      console.log('🔍 DEBUG loadUserRole - role:', userData?.role);
+      console.log('🔍 DEBUG loadUserRole - region:', userData?.region);
+      setUserRole(userData?.role || "");
+      setUserRegion(userData?.region || "");
+      console.log('🔍 DEBUG loadUserRole - userRole state will be set to:', userData?.role || "");
+      console.log('🔍 DEBUG loadUserRole - userRegion state will be set to:', userData?.region || "");
+    } catch (err) {
+      console.error("Error loading user role:", err);
     }
   };
 
@@ -106,9 +127,27 @@ export default function ConoscenzaPage() {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredQA.length / itemsPerPage);
+  // Sort the filtered Q&A entries
+  const sortedQA = [...filteredQA].sort((a, b) => {
+    switch (sortBy) {
+      case "created_at_desc":
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      case "created_at_asc":
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+      case "updated_at_desc":
+        return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+      case "question_asc":
+        return a.question.localeCompare(b.question);
+      case "question_desc":
+        return b.question.localeCompare(a.question);
+      default:
+        return 0;
+    }
+  });
+
+  const totalPages = Math.ceil(sortedQA.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedQA = filteredQA.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedQA = sortedQA.slice(startIndex, startIndex + itemsPerPage);
 
   const showAlert = (message: string, type: "success" | "error" | "info") => {
     setAlert({ message, type });
@@ -117,17 +156,17 @@ export default function ConoscenzaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedRegion || selectedRegion === "All Region") {
-      showAlert("Seleziona una regione specifica prima di salvare", "error");
-      return;
-    }
-    
+
     if (!question.trim() || !answer.trim()) {
       showAlert("Domanda e risposta sono obbligatorie", "error");
       return;
     }
-    
+
+    if (!qaRegion) {
+      showAlert("Seleziona una regione per la Q&A", "error");
+      return;
+    }
+
     setIsSaving(true);
     try {
       if (editingId) {
@@ -142,11 +181,11 @@ export default function ConoscenzaPage() {
         await qaApi.create({
           question: question.trim(),
           answer: answer.trim(),
-          region: selectedRegion,
+          region: qaRegion,
         });
         showAlert("Nuova domanda aggiunta con successo!", "success");
       }
-      
+
       // Reload Q&A list
       await loadQAEntries();
       handleReset();
@@ -162,6 +201,7 @@ export default function ConoscenzaPage() {
     setEditingId(qa.qa_id);
     setQuestion(qa.question);
     setAnswer(qa.answer);
+    setQaRegion(qa.region || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -169,7 +209,7 @@ export default function ConoscenzaPage() {
     if (!confirm("Sei sicuro di voler eliminare questa domanda e risposta?")) {
       return;
     }
-    
+
     try {
       await qaApi.delete(id);
       showAlert("Domanda eliminata con successo!", "success");
@@ -183,6 +223,7 @@ export default function ConoscenzaPage() {
   const handleReset = () => {
     setQuestion("");
     setAnswer("");
+    setQaRegion("");
     setEditingId(null);
   };
 
@@ -215,11 +256,22 @@ export default function ConoscenzaPage() {
                   <SelectValue placeholder="Seleziona una regione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {regions.map((region) => (
-                    <SelectItem key={region.value} value={region.value} disabled={region.value === "All Region"}>
-                      {region.label}
-                    </SelectItem>
-                  ))}
+                  {regions
+                    .filter((region) => {
+                      // Filter out "All Region" and "Nazionale"
+                      if (region.value === "All Region" || region.value === "Nazionale") return false;
+
+                      // Admin (role=admin, region=master) sees all regions
+                      if (userRole === "admin" && userRegion === "master") return true;
+
+                      // Regional users only see their own region
+                      return region.value === userRegion;
+                    })
+                    .map((region) => (
+                      <SelectItem key={region.value} value={region.value}>
+                        {region.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -330,10 +382,46 @@ export default function ConoscenzaPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button 
-                type="submit" 
-                className="gap-2 h-11 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 font-medium" 
+            <div className="space-y-2.5">
+              <Label htmlFor="qa-region" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Regione
+              </Label>
+              <Select value={qaRegion} onValueChange={setQaRegion} disabled={isSaving || editingId !== null}>
+                <SelectTrigger id="qa-region" className="border-gray-200 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                  <SelectValue placeholder="Seleziona regione per questa Q&A" />
+                </SelectTrigger>
+                <SelectContent>
+                  {regions
+                    .filter((region) => {
+                      console.log('🔍 DEBUG filter - Checking region:', region.value, 'userRole:', userRole);
+                      // Filter out "All Region"
+                      if (region.value === "All Region") return false;
+                      // Show "Nazionale" ONLY to admin users
+                      if (region.value === "Nazionale") {
+                        const shouldShow = userRole === "admin";
+                        console.log('🔍 DEBUG filter - Nazionale check: userRole === "admin"?', shouldShow);
+                        return shouldShow;
+                      }
+                      return true;
+                    })
+                    .map((region) => (
+                      <SelectItem key={region.value} value={region.value}>
+                        {region.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {editingId && (
+                <p className="text-xs text-muted-foreground">
+                  La regione non può essere modificata. Regione attuale: <span className="font-semibold">{qaRegion}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="submit"
+                className="gap-2 h-11 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 font-medium"
                 disabled={isSaving}
               >
                 {isSaving ? (
@@ -399,7 +487,7 @@ export default function ConoscenzaPage() {
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                   <SelectItem value="created_at_desc">Più recenti</SelectItem>
                   <SelectItem value="created_at_asc">Più vecchie</SelectItem>
                   <SelectItem value="updated_at_desc">Ultime modificate</SelectItem>
@@ -445,10 +533,26 @@ export default function ConoscenzaPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <Badge variant="outline" className="mb-2 gap-1">
-                            <FileText className="h-3 w-3" />
-                            {qa.id_domanda || `Q${qa.qa_id}`}
-                          </Badge>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <Badge variant="outline" className="gap-1">
+                              <FileText className="h-3 w-3" />
+                              {qa.id_domanda || `Q${qa.qa_id}`}
+                            </Badge>
+                            {qa.region && (
+                              <Badge
+                                variant="secondary"
+                                className={cn(
+                                  "gap-1",
+                                  qa.region === "Nazionale"
+                                    ? "bg-purple-100 text-purple-700 border-purple-200"
+                                    : "bg-blue-100 text-blue-700 border-blue-200"
+                                )}
+                              >
+                                <MapPin className="h-3 w-3" />
+                                {qa.region}
+                              </Badge>
+                            )}
+                          </div>
                           <CardTitle className="text-base line-clamp-2">
                             {qa.question}
                           </CardTitle>

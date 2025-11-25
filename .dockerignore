@@ -53,3 +53,6 @@ CHANGELOG.md
 .prettierrc
 .eslintrc.json
 .eslintignore
+
+# Supabase
+supabase/

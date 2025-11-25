@@ -385,6 +385,14 @@ export const qaApi = {
     });
     return handleResponse(response);
   },
+
+  async getRegions(): Promise<Region[]> {
+    // Send auth headers - Supabase requires authentication
+    const response = await fetch(`${API_BASE_URL}/qa-regions`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
 };
 
 // ==================== Dashboard ====================

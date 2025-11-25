@@ -40,7 +40,7 @@ import {
   Activity,
   Loader2,
 } from "lucide-react";
-import { usersApi, type User as UserType } from "@/lib/api-client";
+import { usersApi, getCurrentUser, type User as UserType } from "@/lib/api-client";
 
 export default function UtentiPage() {
   const [nome, setNome] = useState("");
@@ -51,15 +51,30 @@ export default function UtentiPage() {
   const [filterRole, setFilterRole] = useState("all");
   const [alert, setAlert] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // Current user info
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [currentUserRegion, setCurrentUserRegion] = useState<string>("");
+
   // Real data state
   const [users, setUsers] = useState<UserType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load users on mount
+  // Load users and current user info on mount
   useEffect(() => {
+    loadCurrentUserInfo();
     loadUsers();
   }, []);
+
+  const loadCurrentUserInfo = () => {
+    try {
+      const userData = getCurrentUser();
+      setCurrentUserRole(userData?.role || "");
+      setCurrentUserRegion(userData?.region || "");
+    } catch (err) {
+      console.error("Error loading current user info:", err);
+    }
+  };
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -81,12 +96,18 @@ export default function UtentiPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!nome.trim() || !cognome.trim() || !email.trim() || !ruolo) {
       showAlert("Tutti i campi sono obbligatori", "error");
       return;
     }
-    
+
+    // Regular users (not admin) can only create users with their own region
+    if (currentUserRole !== "admin" && ruolo !== currentUserRegion) {
+      showAlert(`Non sei autorizzato a creare utenti per la regione "${ruolo}". Puoi creare solo utenti per "${currentUserRegion}".`, "error");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await usersApi.create({
@@ -122,12 +143,12 @@ export default function UtentiPage() {
   const filteredUsers = users.filter((user) => {
     const searchLower = searchTerm.toLowerCase();
     const name = user.name || `${user.nome || ''} ${user.cognome || ''}`.trim();
-    const role = user.role || user.ruolo || '';
+    const userRegion = user.region || '';
 
     const matchesSearch =
       name.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower);
-    const matchesRole = filterRole === "all" || role === filterRole;
+    const matchesRole = filterRole === "all" || userRegion === filterRole;
     return matchesSearch && matchesRole;
   });
 
@@ -167,10 +188,16 @@ export default function UtentiPage() {
   };
 
   const handleDelete = async (userId: number) => {
+    // Only admins can delete users
+    if (currentUserRole !== "admin") {
+      showAlert("Non sei autorizzato a eliminare utenti. Solo gli amministratori possono eliminare utenti.", "error");
+      return;
+    }
+
     if (!confirm("Sei sicuro di voler eliminare questo utente? Questa azione non può essere annullata.")) {
       return;
     }
-    
+
     try {
       await usersApi.delete(userId);
       showAlert("Utente eliminato con successo!", "success");
@@ -278,8 +305,17 @@ export default function UtentiPage() {
                     <SelectValue placeholder="Seleziona Ruolo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="master">Master User</SelectItem>
-                    <SelectItem value="Lombardia">Lombardia User</SelectItem>
+                    {/* Admin sees all regions */}
+                    {currentUserRole === "admin" && (
+                      <>
+                        <SelectItem value="master">Master User</SelectItem>
+                        <SelectItem value="Lombardia">Lombardia User</SelectItem>
+                      </>
+                    )}
+                    {/* Regular users only see their own region */}
+                    {currentUserRole !== "admin" && currentUserRegion && (
+                      <SelectItem value={currentUserRegion}>{currentUserRegion} User</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -341,7 +377,7 @@ export default function UtentiPage() {
               <SelectTrigger className="w-full sm:w-[180px] border-gray-200 hover:border-blue-300 transition-colors">
                 <SelectValue placeholder="Tutti i ruoli" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                 <SelectItem value="all">Tutti i ruoli</SelectItem>
                 <SelectItem value="master">Master</SelectItem>
                 <SelectItem value="Lombardia">Lombardia</SelectItem>
@@ -423,28 +459,17 @@ export default function UtentiPage() {
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleStatus(user.user_id, user.is_active)}
-                              title={user.is_active ? "Disattiva" : "Attiva"}
-                              className="hover:bg-yellow-50 hover:text-yellow-700 hover:scale-110 transition-all"
-                            >
-                              {user.is_active ? (
-                                <ToggleRight className="h-4 w-4" />
-                              ) : (
-                                <ToggleLeft className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(user.user_id)}
-                              className="text-red-600 hover:bg-red-50 hover:text-red-700 hover:scale-110 transition-all"
-                              title="Elimina"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {currentUserRole === "admin" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(user.user_id)}
+                                className="text-red-600 hover:bg-red-50 hover:text-red-700 hover:scale-110 transition-all"
+                                title="Elimina"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
