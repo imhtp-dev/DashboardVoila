@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Brain,
-  CheckSquare,
+  MessageSquare,
   Users,
   Mic,
   Menu,
@@ -34,9 +34,9 @@ const menuItems = [
     icon: Brain,
   },
   {
-    title: "Check Conoscenza",
+    title: "Voilà Chat",
     href: "/dashboard/verifica-conoscenza",
-    icon: CheckSquare,
+    icon: MessageSquare,
   },
   {
     title: "Gestione Utenti",

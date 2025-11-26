@@ -55,16 +55,36 @@ export default function VoiceAgentPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-          Voilà Voice Agent
-        </h1>
-        <p className="text-base text-gray-600">
-          Controlla e gestisci i voice agent per regione
-        </p>
+    <div className="relative space-y-8 animate-in fade-in duration-500 min-h-[600px]">
+      {/* Coming Soon Overlay - Only covers this page */}
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-lg">
+        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md mx-4 text-center animate-in zoom-in duration-500">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <Mic className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Coming Soon
+          </h2>
+          <p className="text-gray-600 text-lg mb-2">
+            Voilà Voice Agent
+          </p>
+          <p className="text-gray-500 text-sm">
+            La gestione avanzata dei voice agent sarà disponibile a breve
+          </p>
+        </div>
       </div>
+
+      {/* Blurred Content */}
+      <div className="filter blur-sm pointer-events-none select-none opacity-50">
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            Voilà Voice Agent
+          </h1>
+          <p className="text-base text-gray-600">
+            Controlla e gestisci i voice agent per regione
+          </p>
+        </div>
 
       {/* Alert */}
       {alert && (
@@ -216,6 +236,7 @@ export default function VoiceAgentPage() {
           </ul>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
