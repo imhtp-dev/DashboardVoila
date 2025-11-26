@@ -400,13 +400,15 @@ export default function UtentiPage() {
                     <TableHead className="font-semibold">Ruolo</TableHead>
                     <TableHead className="font-semibold">Stato</TableHead>
                     <TableHead className="font-semibold">Data Creazione</TableHead>
-                    <TableHead className="font-semibold">Azioni</TableHead>
+                    {currentUserRole === "admin" && (
+                      <TableHead className="font-semibold">Azioni</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={currentUserRole === "admin" ? 6 : 5} className="text-center py-8 text-muted-foreground">
                         Nessun utente trovato
                       </TableCell>
                     </TableRow>
@@ -448,18 +450,18 @@ export default function UtentiPage() {
                             {new Date(user.created_at).toLocaleDateString("it-IT")}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleResendCredentials(user.user_id)}
-                              title="Rinvia credenziali"
-                              className="hover:bg-blue-50 hover:text-blue-700 hover:scale-110 transition-all"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            {currentUserRole === "admin" && (
+                        {currentUserRole === "admin" && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleResendCredentials(user.user_id)}
+                                title="Rinvia credenziali"
+                                className="hover:bg-blue-50 hover:text-blue-700 hover:scale-110 transition-all"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -469,9 +471,9 @@ export default function UtentiPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                       );
                     })

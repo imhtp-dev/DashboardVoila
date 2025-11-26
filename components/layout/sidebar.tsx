@@ -13,6 +13,7 @@ import {
   Mic,
   Menu,
   X,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +22,11 @@ const menuItems = [
     title: "Riepilogo",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "KPI",
+    href: "/dashboard/kpi",
+    icon: BarChart3,
   },
   {
     title: "Conoscenza AI",
