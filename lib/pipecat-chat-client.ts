@@ -37,9 +37,9 @@ export class PipecatChatClient {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    // Get URLs from environment variables
-    this.apiBaseUrl = process.env.NEXT_PUBLIC_PIPECAT_CHAT_API_URL || 'http://localhost:8002/api';
-    this.wsBaseUrl = process.env.NEXT_PUBLIC_PIPECAT_CHAT_WS_URL || 'ws://localhost:8002/ws';
+    // Get URLs from environment variables (fallback to production HTTPS URLs)
+    this.apiBaseUrl = process.env.NEXT_PUBLIC_PIPECAT_CHAT_API_URL || 'https://20.199.66.239.nip.io/api';
+    this.wsBaseUrl = process.env.NEXT_PUBLIC_PIPECAT_CHAT_WS_URL || 'wss://20.199.66.239.nip.io/ws';
   }
 
   /**
