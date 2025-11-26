@@ -140,17 +140,18 @@ export class PipecatChatClient {
         this.ws.onopen = () => {
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          console.log('✅ Pipecat WebSocket connected');
+          console.log('✅ Pipecat WebSocket connected. ReadyState:', this.ws?.readyState, '(OPEN = 1)');
           this.emit('connected');
           resolve();
         };
 
         this.ws.onmessage = (event) => {
+          console.log('📥 Raw WebSocket message received:', event.data);
           try {
             const message: PipecatMessage = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            console.error('❌ Failed to parse Pipecat message:', error);
+            console.error('❌ Failed to parse Pipecat message:', error, 'Raw data:', event.data);
           }
         };
 
@@ -260,14 +261,39 @@ export class PipecatChatClient {
    */
   sendMessage(text: string): void {
     if (!this.isConnected || !this.ws) {
+      console.error('❌ Cannot send message: WebSocket not connected', {
+        isConnected: this.isConnected,
+        hasWs: !!this.ws
+      });
       throw new Error('WebSocket not connected');
     }
 
-    if (this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('WebSocket not ready');
+    const readyState = this.ws.readyState;
+    console.log('📤 Attempting to send message. WebSocket readyState:', readyState, {
+      CONNECTING: 0,
+      OPEN: 1,
+      CLOSING: 2,
+      CLOSED: 3
+    });
+
+    if (readyState !== WebSocket.OPEN) {
+      console.error('❌ Cannot send message: WebSocket not ready. ReadyState:', readyState);
+      throw new Error(`WebSocket not ready (readyState: ${readyState})`);
     }
 
-    this.ws.send(JSON.stringify({ message: text }));
+    const payload = { message: text };
+    const jsonPayload = JSON.stringify(payload);
+    console.log('✅ Sending message to Pipecat:', text.substring(0, 50) + '...');
+    console.log('📦 Payload:', payload);
+    console.log('📦 JSON:', jsonPayload);
+
+    try {
+      this.ws.send(jsonPayload);
+      console.log('✅ Message sent successfully via WebSocket');
+    } catch (err) {
+      console.error('❌ Failed to send via WebSocket:', err);
+      throw err;
+    }
   }
 
   /**

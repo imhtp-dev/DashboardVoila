@@ -196,7 +196,14 @@ export function usePipecatChat(): UsePipecatChatReturn {
    * Send a message
    */
   const sendMessage = useCallback((text: string) => {
+    console.log('🔵 sendMessage called', {
+      hasClient: !!clientRef.current,
+      isConnected,
+      hasText: !!text.trim()
+    });
+
     if (!clientRef.current || !isConnected || !text.trim()) {
+      console.warn('⚠️ Cannot send message - preconditions not met');
       return;
     }
 
@@ -212,9 +219,11 @@ export function usePipecatChat(): UsePipecatChatReturn {
       setMessages((prev) => [...prev, userMessage]);
 
       // Send to Pipecat
+      console.log('📨 Calling clientRef.current.sendMessage()');
       clientRef.current.sendMessage(text);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      console.error('❌ Error sending message:', errorMessage);
       setError(errorMessage);
     }
   }, [isConnected]);
