@@ -153,24 +153,6 @@ export default function DashboardPage() {
   const paginatedCalls = calls?.calls || [];
   const totalCalls = calls?.pagination.total_calls || 0;
 
-  const getActionBadge = (action: string) => {
-    const variants: Record<string, { variant: "default" | "destructive" | "outline" | "secondary"; label: string; icon: LucideIcon }> = {
-      transfer: { variant: "secondary", label: "Transfer", icon: TrendingUp },
-      book: { variant: "default", label: "Book", icon: CheckCircle },
-      question: { variant: "outline", label: "Question", icon: MessageCircle },
-      completed_by_voice_agent: { variant: "default", label: "Completed", icon: CheckCircle },
-      time_limit: { variant: "destructive", label: "Time Limit", icon: Clock },
-    };
-    const config = variants[action] || { variant: "outline", label: action, icon: Activity };
-    const Icon = config.icon;
-    return (
-      <Badge variant={config.variant} className="gap-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
-
   const getSentimentBadge = (sentiment: string) => {
     const variants: Record<string, { className: string; icon: LucideIcon }> = {
       positive: { className: "bg-green-100 text-green-800 hover:bg-green-200", icon: Heart },
@@ -369,7 +351,6 @@ export default function DashboardPage() {
                   <TableHead className="font-semibold">Data/Ora</TableHead>
                   <TableHead className="font-semibold">Telefono</TableHead>
                   <TableHead className="font-semibold">Durata</TableHead>
-                  <TableHead className="font-semibold">Azione</TableHead>
                   <TableHead className="font-semibold">Sentiment</TableHead>
                   <TableHead className="font-semibold">Esito</TableHead>
                   <TableHead className="font-semibold">Motivazione</TableHead>
@@ -389,7 +370,6 @@ export default function DashboardPage() {
                         <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-20 rounded-lg" /></TableCell>
                       </TableRow>
                     ))}
                   </>
@@ -413,26 +393,25 @@ export default function DashboardPage() {
                               {call.duration_seconds}s
                             </Badge>
                           </TableCell>
-                          <TableCell>{getActionBadge(call.action)}</TableCell>
                           <TableCell>{getSentimentBadge(call.sentiment)}</TableCell>
                           <TableCell>{getEsitoBadge(call.esito_chiamata || "N/A")}</TableCell>
                           <TableCell className="text-sm text-gray-600">{call.motivazione || "N/A"}</TableCell>
                           <TableCell>
                             <Button
-                              size="sm"
                               variant="ghost"
+                              size="sm"
                               onClick={() => handleViewCall(call)}
-                              className="gap-1.5 hover:bg-blue-600 hover:text-white group-hover:translate-x-0.5 transform transition-all duration-200 font-medium h-8 px-3"
+                              className="hover:bg-blue-50 hover:text-blue-700 transition-all"
                             >
-                              <FileText className="h-3.5 w-3.5" />
-                              <span className="text-xs">Dettagli</span>
+                              <FileText className="h-4 w-4 mr-1" />
+                              Dettagli
                             </Button>
                           </TableCell>
                         </TableRow>
                       ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nessuna chiamata trovata per i filtri selezionati
                     </TableCell>
                   </TableRow>
@@ -486,51 +465,51 @@ export default function DashboardPage() {
 
       {/* Call Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-gray-100">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-blue-50 via-white to-purple-50 border-blue-200 shadow-2xl backdrop-blur-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-blue-900">
               <FileText className="h-5 w-5 text-blue-600" />
               Dettagli Chiamata
             </DialogTitle>
           </DialogHeader>
           {selectedCall && (
             <Tabs defaultValue="summary" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="summary" className="gap-2">
+              <TabsList className="grid w-full grid-cols-3 bg-blue-100/50">
+                <TabsTrigger value="summary" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700">
                   <FileText className="h-4 w-4" />
                   Summary
                 </TabsTrigger>
-                <TabsTrigger value="intent" className="gap-2">
+                <TabsTrigger value="intent" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700">
                   <Target className="h-4 w-4" />
                   Patient Intent
                 </TabsTrigger>
-                <TabsTrigger value="transcript" className="gap-2">
+                <TabsTrigger value="transcript" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700">
                   <MessageCircle className="h-4 w-4" />
                   Transcript
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="summary" className="space-y-4 mt-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <pre className="text-sm whitespace-pre-wrap">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-blue-100 shadow-sm">
+                  <pre className="text-sm whitespace-pre-wrap text-gray-800">
                     {(selectedCall as any).summary || "Nessun summary disponibile"}
                   </pre>
                 </div>
               </TabsContent>
               <TabsContent value="intent" className="space-y-4 mt-4">
-                <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-3 bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-blue-100 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <strong className="text-sm">Esito:</strong>
+                    <strong className="text-sm text-blue-900">Esito:</strong>
                     {getEsitoBadge(selectedCall.esito_chiamata || "N/A")}
                   </div>
                   <div className="flex items-center gap-2">
-                    <strong className="text-sm">Motivazione:</strong>
-                    <span className="text-sm">{selectedCall.motivazione || "N/A"}</span>
+                    <strong className="text-sm text-blue-900">Motivazione:</strong>
+                    <span className="text-sm text-gray-800">{selectedCall.motivazione || "N/A"}</span>
                   </div>
                 </div>
               </TabsContent>
               <TabsContent value="transcript" className="space-y-4 mt-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <pre className="text-sm whitespace-pre-wrap font-mono">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-blue-100 shadow-sm">
+                  <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800">
                     {(selectedCall as any).transcript || "Nessun transcript disponibile"}
                   </pre>
                 </div>
