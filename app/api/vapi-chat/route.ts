@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       input: message,
     };
 
-    // Add previousChatId only if it exists
+    // Add previousChatId only if it exist
     if (previous_chat_id) {
       payload.previousChatId = previous_chat_id;
     }
