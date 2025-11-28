@@ -94,3 +94,18 @@ export interface MotivationData {
   motivazione: string;
   count: number;
 }
+
+export interface QuestionCluster {
+  cluster_id: string;
+  domanda: string;
+  numero_domande: number;
+  percentuale: number;
+}
+
+export interface ClusterDetail {
+  phone_number: string;
+  started_at: string;
+  sentiment: string;
+  esito_chiamata: string;
+  domanda_specifica: string;
+}

@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   BarChart3,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +33,11 @@ const menuItems = [
     title: "Conoscenza AI",
     href: "/dashboard/conoscenza",
     icon: Brain,
+  },
+  {
+    title: "Domande frequenti",
+    href: "/dashboard/domande-frequenti",
+    icon: HelpCircle,
   },
   {
     title: "Voilà Chat",

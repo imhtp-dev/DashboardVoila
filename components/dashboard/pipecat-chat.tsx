@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Bot, User, Loader2, Sparkles, Database, Network, AlertCircle } from "lucide-react";
+import { Send, Bot, User, Sparkles, Database, Network, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePipecatChat } from "@/hooks/use-pipecat-chat";
+import { useChat } from "@/hooks/use-chat";
 
 // Badge configuration for different function types
 // Maps actual backend function names to display labels and styles
@@ -78,6 +78,32 @@ const BADGE_CONFIG: Record<string, { label: string; className: string; icon: any
     label: 'Graph Query',
     className: 'bg-green-50 text-green-700 border-green-200',
     icon: Network
+  },
+  // Vapi function names (exact names returned by Vapi backend)
+  get_list_exam_by_sport: {
+    label: 'Get Exams By Sport',
+    className: 'bg-green-50 text-green-700 border-green-200',
+    icon: Network
+  },
+  get_list_exam_by_visit: {
+    label: 'Get Exams By Visit',
+    className: 'bg-teal-50 text-teal-700 border-teal-200',
+    icon: Network
+  },
+  get_price_agonistic_visit: {
+    label: 'Agonistic Pricing',
+    className: 'bg-blue-50 text-blue-700 border-blue-200',
+    icon: Network
+  },
+  GRAPH: {
+    label: 'GRAPH',
+    className: 'bg-green-50 text-green-700 border-green-200',
+    icon: Network
+  },
+  RAG: {
+    label: 'RAG',
+    className: 'bg-purple-50 text-purple-700 border-purple-200',
+    icon: Database
   }
 };
 
@@ -94,11 +120,10 @@ function getBadgeConfig(functionName: string) {
 }
 
 interface PipecatChatProps {
-  onStatsUpdate?: (stats: { messages: number; ragCalls: number; graphCalls: number }) => void;
   onConnectionChange?: (connected: boolean) => void;
 }
 
-export function PipecatChat({ onStatsUpdate, onConnectionChange }: PipecatChatProps) {
+export function PipecatChat({ onConnectionChange }: PipecatChatProps) {
   const [inputMessage, setInputMessage] = useState("");
   const [charCount, setCharCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -113,19 +138,20 @@ export function PipecatChat({ onStatsUpdate, onConnectionChange }: PipecatChatPr
     error,
     messages,
     currentChunk,
-    ragCallsCount,
-    graphCallsCount,
-    totalMessagesCount,
     connect,
     disconnect,
     sendMessage,
-  } = usePipecatChat();
+  } = useChat();
 
   // Auto-connect on mount
   useEffect(() => {
+    let isMounted = true;
+
     const attemptConnect = async () => {
       try {
-        await connect();
+        if (isMounted) {
+          await connect();
+        }
       } catch (err) {
         console.error('Failed to auto-connect:', err);
       }
@@ -133,23 +159,13 @@ export function PipecatChat({ onStatsUpdate, onConnectionChange }: PipecatChatPr
 
     attemptConnect();
 
-    // Cleanup ONLY on unmount (not on re-renders)
+    // Cleanup on unmount
     return () => {
-      disconnect();
+      isMounted = false;
+      // Don't disconnect - let the hook handle cleanup
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - run only once on mount
-
-  // Update stats when they change
-  useEffect(() => {
-    if (onStatsUpdate) {
-      onStatsUpdate({
-        messages: totalMessagesCount,
-        ragCalls: ragCallsCount,
-        graphCalls: graphCallsCount,
-      });
-    }
-  }, [totalMessagesCount, ragCallsCount, graphCallsCount, onStatsUpdate]);
 
   // Update connection status when it changes
   useEffect(() => {
@@ -306,14 +322,18 @@ export function PipecatChat({ onStatsUpdate, onConnectionChange }: PipecatChatPr
               </div>
             )}
 
-            {/* Typing Indicator */}
+            {/* Typing Indicator - Modern Animated Dots */}
             {isTyping && !currentChunk && (
               <div className="flex gap-3 justify-start animate-in slide-in-from-bottom duration-300">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Bot className="h-5 w-5 text-white" />
                 </div>
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <div className="bg-white rounded-2xl px-6 py-4 shadow-sm border border-gray-100">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce"></div>
+                  </div>
                 </div>
               </div>
             )}

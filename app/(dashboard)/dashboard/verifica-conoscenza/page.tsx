@@ -1,28 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Database, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PipecatChat } from "@/components/dashboard/pipecat-chat";
 
 export default function VerificaConoscenzaPage() {
   const [isPipecatConnected, setIsPipecatConnected] = useState(false);
 
-  // Stats from Pipecat chat
-  const [chatStats, setChatStats] = useState({
-    messages: 0,
-    ragCalls: 0,
-    graphCalls: 0,
-  });
-
-  // Handle stats update from Pipecat chat
-  const handleStatsUpdate = useCallback((stats: { messages: number; ragCalls: number; graphCalls: number }) => {
-    setChatStats(stats);
-  }, []);
-
-  // Handle connection change from Pipecat chat
+  // Handle connection change from chat
   const handleConnectionChange = useCallback((connected: boolean) => {
     setIsPipecatConnected(connected);
   }, []);
@@ -72,7 +58,6 @@ export default function VerificaConoscenzaPage() {
 
       {/* Chat Voilà Interface */}
       <PipecatChat
-        onStatsUpdate={handleStatsUpdate}
         onConnectionChange={handleConnectionChange}
       />
     </div>

@@ -48,8 +48,12 @@ jobs:
             NODE_ENV=production
             NEXT_PUBLIC_SUPABASE_URL=https://yxqconubtqdskcxiobsp.supabase.co
             NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cWNvbnVidHFkc2tjeGlvYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNjMzNzYsImV4cCI6MjA3ODkzOTM3Nn0.-JnEq6PTC-xvYL6ePSVcCdQoYMU6gIlgsR6z5fSI63Y
+            NEXT_PUBLIC_CHAT_PROVIDER=vapi
             NEXT_PUBLIC_PIPECAT_CHAT_API_URL=https://20.199.66.239.nip.io/api
             NEXT_PUBLIC_PIPECAT_CHAT_WS_URL=wss://20.199.66.239.nip.io/ws
+            VAPI_API_KEY=${{ secrets.VAPI_API_KEY }}
+            VAPI_ASSISTANT_ID=${{ secrets.VAPI_ASSISTANT_ID }}
+            VAPI_CHAT_URL=https://api.vapi.ai/chat
 
   deploy:
     runs-on: ubuntu-latest
@@ -73,15 +77,19 @@ jobs:
             --docker-custom-image-name ${{ env.DOCKER_IMAGE }}:latest \
             --docker-registry-server-url https://index.docker.io/v1
 
-          # Set environment variables for Supabase and Pipecat Chat
+          # Set environment variables for Supabase, Pipecat, and Vapi Chat
           az webapp config appsettings set \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --settings \
               NEXT_PUBLIC_SUPABASE_URL="https://yxqconubtqdskcxiobsp.supabase.co" \
               NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cWNvbnVidHFkc2tjeGlvYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNjMzNzYsImV4cCI6MjA3ODkzOTM3Nn0.-JnEq6PTC-xvYL6ePSVcCdQoYMU6gIlgsR6z5fSI63Y" \
+              NEXT_PUBLIC_CHAT_PROVIDER="vapi" \
               NEXT_PUBLIC_PIPECAT_CHAT_API_URL="https://20.199.66.239.nip.io/api" \
               NEXT_PUBLIC_PIPECAT_CHAT_WS_URL="wss://20.199.66.239.nip.io/ws" \
+              VAPI_API_KEY="${{ secrets.VAPI_API_KEY }}" \
+              VAPI_ASSISTANT_ID="${{ secrets.VAPI_ASSISTANT_ID }}" \
+              VAPI_CHAT_URL="https://api.vapi.ai/chat" \
               WEBSITES_PORT=3000 \
               DOCKER_ENABLE_CI=true
 
