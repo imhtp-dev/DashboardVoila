@@ -250,6 +250,26 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
     const errorMessage = error.detail || error.message || `HTTP ${response.status}`;
     console.error(`❌ API Error (${response.status}):`, errorMessage, error);
+
+    // Auto-logout on token expiry or invalid JWT (401 Unauthorized)
+    if (response.status === 401) {
+      const isTokenExpired =
+        errorMessage.includes('Token scaduto') ||
+        errorMessage.includes('Invalid JWT') ||
+        errorMessage.includes('expired') ||
+        errorMessage.includes('Unauthorized');
+
+      if (isTokenExpired) {
+        console.warn('🔒 Token expired, logging out...');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('current_user');
+          // Redirect to login page
+          window.location.href = '/login';
+        }
+      }
+    }
+
     throw new Error(errorMessage);
   }
   return response.json();
