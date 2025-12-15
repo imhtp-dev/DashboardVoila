@@ -431,13 +431,14 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
-  async getCalls(params?: { limit?: number; offset?: number; region?: string; start_date?: string; end_date?: string }): Promise<CallListResponse> {
+  async getCalls(params?: { limit?: number; offset?: number; region?: string; start_date?: string; end_date?: string; phone_search?: string }): Promise<CallListResponse> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.phone_search) queryParams.append('phone_search', params.phone_search);
 
     const url = `${API_BASE_URL}/dashboard-calls${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {

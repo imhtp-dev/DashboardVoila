@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [pageSize] = useState(10);
   const [selectedCall, setSelectedCall] = useState<CallItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [phoneSearch, setPhoneSearch] = useState("");
 
   // Real data state
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -80,7 +81,7 @@ export default function DashboardPage() {
     if (regions.length > 0) {
       loadDashboardData();
     }
-  }, [selectedRegion, startDate, endDate, currentPage]);
+  }, [selectedRegion, startDate, endDate, currentPage, phoneSearch]);
 
   const loadRegions = async () => {
     try {
@@ -111,6 +112,7 @@ export default function DashboardPage() {
         region: selectedRegion,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
+        phone_search: phoneSearch || undefined,
       });
       setCalls(callsData);
 
@@ -127,6 +129,7 @@ export default function DashboardPage() {
     setStartDate("");
     setEndDate("");
     setSelectedRegion("All Region");
+    setPhoneSearch("");
     setCurrentPage(1);
   };
 
@@ -336,10 +339,37 @@ export default function DashboardPage() {
               <Phone className="h-5 w-5 text-blue-600" />
               Chiamate Recenti
             </CardTitle>
-            <Badge variant="secondary" className="gap-1">
-              <Activity className="h-3 w-3" />
-              {totalCalls} chiamate
-            </Badge>
+            <div className="flex items-center gap-3">
+              {/* Phone Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Cerca telefono..."
+                  value={phoneSearch}
+                  onChange={(e) => {
+                    setPhoneSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-9 pr-8 h-9 w-48 border-gray-200 focus:border-blue-400 focus:ring-blue-100"
+                />
+                {phoneSearch && (
+                  <button
+                    onClick={() => {
+                      setPhoneSearch("");
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Badge variant="secondary" className="gap-1">
+                <Activity className="h-3 w-3" />
+                {totalCalls} chiamate
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
