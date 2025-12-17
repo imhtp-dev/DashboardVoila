@@ -69,11 +69,12 @@ const ESITO_OPTIONS = [
 
 const MOTIVAZIONE_OPTIONS = [
   { value: "Richiesta paziente", label: "Richiesta paziente" },
-  { value: "Prenotazione visita", label: "Prenotazione visita" },
-  { value: "Informazioni", label: "Informazioni" },
-  { value: "Annullamento", label: "Annullamento" },
-  { value: "Modifica appuntamento", label: "Modifica appuntamento" },
-  { value: "Altro", label: "Altro" },
+  { value: "Info fornite", label: "Info fornite" },
+  { value: "Argomento sconosciuto", label: "Argomento sconosciuto" },
+  { value: "Interrotta dal paziente", label: "Interrotta dal paziente" },
+  { value: "Mancata comprensione", label: "Mancata comprensione" },
+  { value: "Problema Tecnico", label: "Problema Tecnico" },
+  { value: "Fuori orario", label: "Fuori orario" },
   { value: "N/A", label: "N/A" },
 ];
 
