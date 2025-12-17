@@ -52,6 +52,30 @@ import {
 } from "lucide-react";
 import { dashboardApi, type DashboardStats, type Region, type CallListResponse, type CallItem } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ColumnFilter } from "@/components/dashboard/column-filter";
+
+// Filter options for columns
+const SENTIMENT_OPTIONS = [
+  { value: "positive", label: "Positive", color: "bg-green-500" },
+  { value: "negative", label: "Negative", color: "bg-red-500" },
+  { value: "neutral", label: "Neutral", color: "bg-blue-500" },
+];
+
+const ESITO_OPTIONS = [
+  { value: "COMPLETATA", label: "Completata", color: "bg-green-500" },
+  { value: "TRASFERITA", label: "Trasferita", color: "bg-yellow-500" },
+  { value: "NON COMPLETATA", label: "Non Completata", color: "bg-red-500" },
+];
+
+const MOTIVAZIONE_OPTIONS = [
+  { value: "Richiesta paziente", label: "Richiesta paziente" },
+  { value: "Prenotazione visita", label: "Prenotazione visita" },
+  { value: "Informazioni", label: "Informazioni" },
+  { value: "Annullamento", label: "Annullamento" },
+  { value: "Modifica appuntamento", label: "Modifica appuntamento" },
+  { value: "Altro", label: "Altro" },
+  { value: "N/A", label: "N/A" },
+];
 
 export default function DashboardPage() {
   const [selectedRegion, setSelectedRegion] = useState("All Region");
@@ -62,6 +86,11 @@ export default function DashboardPage() {
   const [selectedCall, setSelectedCall] = useState<CallItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [phoneSearch, setPhoneSearch] = useState("");
+
+  // Column filter states
+  const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
+  const [esitoFilter, setEsitoFilter] = useState<string[]>([]);
+  const [motivazioneFilter, setMotivazioneFilter] = useState<string[]>([]);
 
   // Real data state
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -81,7 +110,7 @@ export default function DashboardPage() {
     if (regions.length > 0) {
       loadDashboardData();
     }
-  }, [selectedRegion, startDate, endDate, currentPage, phoneSearch]);
+  }, [selectedRegion, startDate, endDate, currentPage, phoneSearch, sentimentFilter, esitoFilter, motivazioneFilter]);
 
   const loadRegions = async () => {
     try {
@@ -113,6 +142,9 @@ export default function DashboardPage() {
         start_date: startDate || undefined,
         end_date: endDate || undefined,
         phone_search: phoneSearch || undefined,
+        sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined,
+        esito: esitoFilter.length > 0 ? esitoFilter : undefined,
+        motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
       });
       setCalls(callsData);
 
@@ -130,6 +162,9 @@ export default function DashboardPage() {
     setEndDate("");
     setSelectedRegion("All Region");
     setPhoneSearch("");
+    setSentimentFilter([]);
+    setEsitoFilter([]);
+    setMotivazioneFilter([]);
     setCurrentPage(1);
   };
 
@@ -381,9 +416,39 @@ export default function DashboardPage() {
                   <TableHead className="font-semibold">Data/Ora</TableHead>
                   <TableHead className="font-semibold">Telefono</TableHead>
                   <TableHead className="font-semibold">Durata</TableHead>
-                  <TableHead className="font-semibold">Sentiment</TableHead>
-                  <TableHead className="font-semibold">Esito</TableHead>
-                  <TableHead className="font-semibold">Motivazione</TableHead>
+                  <TableHead className="font-semibold p-0">
+                    <ColumnFilter
+                      title="Sentiment"
+                      options={SENTIMENT_OPTIONS}
+                      selectedValues={sentimentFilter}
+                      onFilterChange={(values) => {
+                        setSentimentFilter(values);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead className="font-semibold p-0">
+                    <ColumnFilter
+                      title="Esito"
+                      options={ESITO_OPTIONS}
+                      selectedValues={esitoFilter}
+                      onFilterChange={(values) => {
+                        setEsitoFilter(values);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead className="font-semibold p-0">
+                    <ColumnFilter
+                      title="Motivazione"
+                      options={MOTIVAZIONE_OPTIONS}
+                      selectedValues={motivazioneFilter}
+                      onFilterChange={(values) => {
+                        setMotivazioneFilter(values);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </TableHead>
                   <TableHead className="font-semibold">Azioni</TableHead>
                 </TableRow>
               </TableHeader>

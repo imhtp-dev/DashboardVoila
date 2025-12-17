@@ -431,7 +431,17 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
-  async getCalls(params?: { limit?: number; offset?: number; region?: string; start_date?: string; end_date?: string; phone_search?: string }): Promise<CallListResponse> {
+  async getCalls(params?: {
+    limit?: number;
+    offset?: number;
+    region?: string;
+    start_date?: string;
+    end_date?: string;
+    phone_search?: string;
+    sentiment?: string[];
+    esito?: string[];
+    motivazione?: string[];
+  }): Promise<CallListResponse> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
@@ -439,6 +449,10 @@ export const dashboardApi = {
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
     if (params?.phone_search) queryParams.append('phone_search', params.phone_search);
+    // Column filters (sent as comma-separated values)
+    if (params?.sentiment && params.sentiment.length > 0) queryParams.append('sentiment', params.sentiment.join(','));
+    if (params?.esito && params.esito.length > 0) queryParams.append('esito', params.esito.join(','));
+    if (params?.motivazione && params.motivazione.length > 0) queryParams.append('motivazione', params.motivazione.join(','));
 
     const url = `${API_BASE_URL}/dashboard-calls${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {
