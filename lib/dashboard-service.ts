@@ -660,6 +660,7 @@ export async function getCallOutcomeStats(params?: {
     // Aggregate outcome stats
     const outcomeMap: Record<string, number> = {}
     const motivationMap: Record<string, number> = {}
+    const combinedMap: Record<string, Record<string, number>> = {}
 
     data?.forEach((row) => {
       // Outcome stats
@@ -668,6 +669,13 @@ export async function getCallOutcomeStats(params?: {
       // Motivation stats (only for non-null motivazione)
       if (row.motivazione && row.motivazione !== '' && row.motivazione !== 'NULL') {
         motivationMap[row.motivazione] = (motivationMap[row.motivazione] || 0) + 1
+
+        // Combined stats (esito + motivazione)
+        const esito = row.esito_chiamata!
+        if (!combinedMap[esito]) {
+          combinedMap[esito] = {}
+        }
+        combinedMap[esito][row.motivazione] = (combinedMap[esito][row.motivazione] || 0) + 1
       }
     })
 
@@ -682,9 +690,18 @@ export async function getCallOutcomeStats(params?: {
       count,
     }))
 
+    // Convert combined map to array
+    const combined_stats: Array<{ esito_chiamata: string; motivazione: string; count: number }> = []
+    Object.entries(combinedMap).forEach(([esito_chiamata, motivazioni]) => {
+      Object.entries(motivazioni).forEach(([motivazione, count]) => {
+        combined_stats.push({ esito_chiamata, motivazione, count })
+      })
+    })
+
     return {
       outcome_stats,
       motivation_stats,
+      combined_stats,
       total_calls_with_outcome: data?.length || 0,
     }
   } catch (error) {
@@ -692,6 +709,7 @@ export async function getCallOutcomeStats(params?: {
     return {
       outcome_stats: [],
       motivation_stats: [],
+      combined_stats: [],
       total_calls_with_outcome: 0,
     }
   }

@@ -40,8 +40,12 @@ export default function KPIPage() {
   // Chart data state
   const [outcomeTrendData, setOutcomeTrendData] = useState<Array<{ date: string; COMPLETATA: number; TRASFERITA: number; "NON COMPLETATA": number }>>([]);
   const [sentimentTrendData, setSentimentTrendData] = useState<Array<{ date: string; positive: number; neutral: number; negative: number }>>([]);
-  const [motivazioneStats, setMotivazioneStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
   const [esitoStats, setEsitoStats] = useState<Array<{ esito: string; count: number; color: string }>>([]);
+
+  // Three new charts for categorized motivations
+  const [completataStats, setCompletataStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
+  const [transferitaStats, setTransferitaStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
+  const [nonCompletataStats, setNonCompletataStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
 
   // Load initial data
   useEffect(() => {
@@ -133,14 +137,6 @@ export default function KPIPage() {
         end_date: endDate || undefined,
       });
 
-      // Map motivazione stats with colors
-      const motivazioneColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
-      setMotivazioneStats((outcomeStats.motivation_stats || []).map((m: { motivazione: string; count: number }, idx: number) => ({
-        motivazione: m.motivazione,
-        count: m.count,
-        color: motivazioneColors[idx % motivazioneColors.length]
-      })));
-
       // Map esito stats with specific colors
       const esitoColors: Record<string, string> = {
         "COMPLETATA": "#10b981",
@@ -151,6 +147,45 @@ export default function KPIPage() {
         esito: e.esito_chiamata,
         count: e.count,
         color: esitoColors[e.esito_chiamata] || "#6b7280"
+      })));
+
+      // Process combined stats for three separate charts
+      const combined = outcomeStats.combined_stats || [];
+
+      // Chart 1: COMPLETATA - Info fornite (single value, green) - case insensitive
+      const completataData = combined.filter(
+        (item) => item.esito_chiamata === "COMPLETATA" && item.motivazione?.toLowerCase() === "info fornite"
+      );
+      setCompletataStats(completataData.map((item) => ({
+        motivazione: item.motivazione,
+        count: item.count,
+        color: "#10b981" // Green
+      })));
+
+      // Chart 2: TRASFERITA - Multiple motivazioni (yellow shades) - case insensitive
+      const transferitaMotivazioni = ["mancata comprensione", "argomento sconosciuto", "richiesta paziente"];
+      const transferitaColors = ["#fbbf24", "#f59e0b", "#d97706"]; // Different yellow shades
+      const transferitaData = combined.filter(
+        (item) => item.esito_chiamata === "TRASFERITA" &&
+          transferitaMotivazioni.includes(item.motivazione?.toLowerCase())
+      );
+      setTransferitaStats(transferitaData.map((item) => ({
+        motivazione: item.motivazione,
+        count: item.count,
+        color: transferitaColors[transferitaMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#f59e0b"
+      })));
+
+      // Chart 3: NON COMPLETATA - Multiple motivazioni (red shades) - case insensitive
+      const nonCompletataMotivazioni = ["interrotta dal paziente", "fuori orario", "problema tecnico"];
+      const nonCompletataColors = ["#f87171", "#ef4444", "#dc2626"]; // Different red shades
+      const nonCompletataData = combined.filter(
+        (item) => item.esito_chiamata === "NON COMPLETATA" &&
+          nonCompletataMotivazioni.includes(item.motivazione?.toLowerCase())
+      );
+      setNonCompletataStats(nonCompletataData.map((item) => ({
+        motivazione: item.motivazione,
+        count: item.count,
+        color: nonCompletataColors[nonCompletataMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#ef4444"
       })));
 
     } catch (err) {
@@ -400,8 +435,8 @@ export default function KPIPage() {
       )}
 
       {/* Pie Charts Row */}
-      {sentimentStats.length > 0 || motivazioneStats.length > 0 || esitoStats.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {sentimentStats.length > 0 || esitoStats.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           {/* Sentiment Distribution */}
           {sentimentStats.length > 0 && (
             <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
@@ -454,57 +489,6 @@ export default function KPIPage() {
                     {sentimentStats.reduce((sum, item) => sum + item.count, 0)} chiamate totali
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Motivazione Distribution */}
-          {motivazioneStats.length > 0 && (
-            <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2.5">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100">
-                    <MessageCircle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  Distribuzione Motivazioni
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-6">
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={motivazioneStats}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={false}
-                      outerRadius={85}
-                      fill="#8884d8"
-                      dataKey="count"
-                      nameKey="motivazione"
-                      strokeWidth={2}
-                      stroke="#fff"
-                    >
-                      {motivazioneStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      formatter={(value) => <span className="text-sm font-medium text-gray-700">{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
               </CardContent>
             </Card>
           )}
@@ -566,6 +550,214 @@ export default function KPIPage() {
           )}
         </div>
       ) : null}
+
+      {/* Three Motivazione Charts by Outcome */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Chart 1: Completata */}
+        <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-green-50 to-green-100">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              Completate
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-6">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={completataStats.length > 0 ? completataStats : [{ motivazione: "Info fornite", count: 0, color: "#10b981" }]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={false}
+                  innerRadius={60}
+                  outerRadius={85}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="motivazione"
+                  strokeWidth={2}
+                  stroke="#fff"
+                >
+                  {(completataStats.length > 0 ? completataStats : [{ motivazione: "Info fornite", count: 0, color: "#10b981" }]).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ payload }) => {
+                    if (!payload || payload.length === 0) return null;
+                    const data = payload[0];
+                    return (
+                      <div style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}>
+                        <p className="text-sm font-medium">{data.name}: {data.value}</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={56}
+                  formatter={(value) => <span className="text-xs font-medium text-gray-700">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-600">
+                {completataStats.reduce((sum, item) => sum + item.count, 0)} chiamate
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart 2: Trasferita */}
+        <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+                <MessageCircle className="h-5 w-5 text-yellow-600" />
+              </div>
+              Trasferita
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-6">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={transferitaStats.length > 0 ? transferitaStats : [
+                    { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
+                    { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
+                    { motivazione: "Mancata comprensione", count: 0, color: "#d97706" }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={false}
+                  innerRadius={60}
+                  outerRadius={85}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="motivazione"
+                  strokeWidth={2}
+                  stroke="#fff"
+                >
+                  {(transferitaStats.length > 0 ? transferitaStats : [
+                    { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
+                    { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
+                    { motivazione: "Mancata comprensione", count: 0, color: "#d97706" }
+                  ]).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ payload }) => {
+                    if (!payload || payload.length === 0) return null;
+                    const data = payload[0];
+                    return (
+                      <div style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}>
+                        <p className="text-sm font-medium">{data.name}: {data.value}</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={56}
+                  formatter={(value) => <span className="text-xs font-medium text-gray-700">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-600">
+                {transferitaStats.reduce((sum, item) => sum + item.count, 0)} chiamate
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart 3: Non-completata */}
+        <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-red-50 to-red-100">
+                <X className="h-5 w-5 text-red-600" />
+              </div>
+              Non-completata
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-6">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={nonCompletataStats.length > 0 ? nonCompletataStats : [
+                    { motivazione: "Interrotta dal paziente", count: 0, color: "#f87171" },
+                    { motivazione: "Fuori orario", count: 0, color: "#ef4444" },
+                    { motivazione: "Problema Tecnico", count: 0, color: "#dc2626" }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={false}
+                  innerRadius={60}
+                  outerRadius={85}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="motivazione"
+                  strokeWidth={2}
+                  stroke="#fff"
+                >
+                  {(nonCompletataStats.length > 0 ? nonCompletataStats : [
+                    { motivazione: "Interrotta dal paziente", count: 0, color: "#f87171" },
+                    { motivazione: "Fuori orario", count: 0, color: "#ef4444" },
+                    { motivazione: "Problema Tecnico", count: 0, color: "#dc2626" }
+                  ]).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ payload }) => {
+                    if (!payload || payload.length === 0) return null;
+                    const data = payload[0];
+                    return (
+                      <div style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}>
+                        <p className="text-sm font-medium">{data.name}: {data.value}</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={56}
+                  formatter={(value) => <span className="text-xs font-medium text-gray-700">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-600">
+                {nonCompletataStats.reduce((sum, item) => sum + item.count, 0)} chiamate
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

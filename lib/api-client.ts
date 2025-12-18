@@ -215,6 +215,7 @@ export interface TrendResponse {
 export interface CallOutcomeStats {
   outcome_stats: Array<{ esito_chiamata: string; count: number }>;
   motivation_stats: Array<{ motivazione: string; count: number }>;
+  combined_stats: Array<{ esito_chiamata: string; motivazione: string; count: number }>;
   total_calls_with_outcome: number;
 }
 
