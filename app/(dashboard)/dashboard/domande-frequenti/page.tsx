@@ -297,8 +297,8 @@ export default function DomandeFrequentiPage() {
               <p className="text-gray-500">Nessun dettaglio disponibile per questo cluster</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 overflow-hidden mt-4">
-              <Table>
+            <div className="rounded-lg border border-gray-200 overflow-x-auto mt-4">
+              <Table className="min-w-full">
                 <TableHeader className="bg-gray-50/50">
                   <TableRow>
                     <TableHead className="font-semibold">
@@ -337,8 +337,8 @@ export default function DomandeFrequentiPage() {
                           {detail.esito_chiamata}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-md">
-                        <p className="text-sm text-gray-700 line-clamp-2">
+                      <TableCell className="min-w-[300px] max-w-lg">
+                        <p className="text-sm text-gray-700 whitespace-normal break-words">
                           {detail.domanda_specifica}
                         </p>
                       </TableCell>
