@@ -21,6 +21,7 @@ import {
   BarChart3,
   TrendingUp,
   CheckCircle,
+  PhoneOff,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { dashboardApi, type Region } from "@/lib/api-client";
@@ -42,10 +43,11 @@ export default function KPIPage() {
   const [sentimentTrendData, setSentimentTrendData] = useState<Array<{ date: string; positive: number; neutral: number; negative: number }>>([]);
   const [esitoStats, setEsitoStats] = useState<Array<{ esito: string; count: number; color: string }>>([]);
 
-  // Three new charts for categorized motivations
+  // Four charts for categorized motivations (including Riagganciato)
   const [completataStats, setCompletataStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
   const [transferitaStats, setTransferitaStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
   const [nonCompletataStats, setNonCompletataStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
+  const [riaganciatoStats, setRiaganciatoStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
 
   // Load initial data
   useEffect(() => {
@@ -137,11 +139,12 @@ export default function KPIPage() {
         end_date: endDate || undefined,
       });
 
-      // Map esito stats with specific colors
+      // Map esito stats with specific colors (including RIAGGANCIATO for hung-up calls)
       const esitoColors: Record<string, string> = {
         "COMPLETATA": "#10b981",
         "TRASFERITA": "#f59e0b",
-        "NON COMPLETATA": "#ef4444"
+        "NON COMPLETATA": "#ef4444",
+        "RIAGGANCIATO": "#6b7280" // Gray for hung-up calls
       };
       setEsitoStats((outcomeStats.outcome_stats || []).map((e: { esito_chiamata: string; count: number }) => ({
         esito: e.esito_chiamata,
@@ -186,6 +189,16 @@ export default function KPIPage() {
         motivazione: item.motivazione,
         count: item.count,
         color: nonCompletataColors[nonCompletataMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#ef4444"
+      })));
+
+      // Chart 4: RIAGGANCIATO - Hung-up calls (gray)
+      const riaganciatoData = combined.filter(
+        (item) => item.esito_chiamata === "RIAGGANCIATO"
+      );
+      setRiaganciatoStats(riaganciatoData.map((item) => ({
+        motivazione: "Riagganciato",
+        count: item.count,
+        color: "#6b7280" // Gray
       })));
 
     } catch (err) {
@@ -551,8 +564,8 @@ export default function KPIPage() {
         </div>
       ) : null}
 
-      {/* Three Motivazione Charts by Outcome */}
-      <div className="grid gap-6 md:grid-cols-3">
+      {/* Four Motivazione Charts by Outcome (including Riagganciato) */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Chart 1: Completata */}
         <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
           <CardHeader className="pb-4">
@@ -753,6 +766,69 @@ export default function KPIPage() {
             <div className="text-center mt-4 pt-4 border-t border-gray-100">
               <p className="text-sm font-semibold text-gray-600">
                 {nonCompletataStats.reduce((sum, item) => sum + item.count, 0)} chiamate
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart 4: Riagganciato (Hung-up calls) */}
+        <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                <PhoneOff className="h-5 w-5 text-gray-600" />
+              </div>
+              Riagganciato
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-6">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={riaganciatoStats.length > 0 ? riaganciatoStats : [{ motivazione: "Riagganciato", count: 0, color: "#6b7280" }]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={false}
+                  innerRadius={60}
+                  outerRadius={85}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="motivazione"
+                  strokeWidth={2}
+                  stroke="#fff"
+                >
+                  {(riaganciatoStats.length > 0 ? riaganciatoStats : [{ motivazione: "Riagganciato", count: 0, color: "#6b7280" }]).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ payload }) => {
+                    if (!payload || payload.length === 0) return null;
+                    const data = payload[0];
+                    return (
+                      <div style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}>
+                        <p className="text-sm font-medium">{data.name}: {data.value}</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={56}
+                  formatter={(value) => <span className="text-xs font-medium text-gray-700">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-600">
+                {riaganciatoStats.reduce((sum, item) => sum + item.count, 0)} chiamate
               </p>
             </div>
           </CardContent>
