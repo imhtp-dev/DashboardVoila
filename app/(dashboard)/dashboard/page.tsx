@@ -601,9 +601,9 @@ export default function DashboardPage() {
             <DialogTitle className="flex items-center gap-2 text-blue-900">
               <FileText className="h-5 w-5 text-blue-600" />
               Dettagli Chiamata
-              {selectedCall?.call_id && (
+              {selectedCall?.id && (
                 <Badge variant="outline" className="ml-2 font-mono text-xs">
-                  ID: {selectedCall.call_id}
+                  ID: {selectedCall.id}
                 </Badge>
               )}
             </DialogTitle>
