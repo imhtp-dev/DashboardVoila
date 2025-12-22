@@ -56,3 +56,6 @@ CHANGELOG.md
 
 # Supabase
 supabase/
+
+# Claude Code
+.claude/

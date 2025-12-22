@@ -46,3 +46,11 @@ next-env.d.ts
 
 # supabase
 /supabase/
+
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Documentation (not needed in repo)
+CHAT_SERVICE_INTEGRATION.md
+WHATS_DONE.MD

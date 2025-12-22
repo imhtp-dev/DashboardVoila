@@ -86,7 +86,8 @@ export default function DashboardPage() {
   const [pageSize] = useState(10);
   const [selectedCall, setSelectedCall] = useState<CallItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [phoneSearch, setPhoneSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageInputValue, setPageInputValue] = useState("1");
 
   // Column filter states
   const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
@@ -111,7 +112,12 @@ export default function DashboardPage() {
     if (regions.length > 0) {
       loadDashboardData();
     }
-  }, [selectedRegion, startDate, endDate, currentPage, phoneSearch, sentimentFilter, esitoFilter, motivazioneFilter]);
+  }, [selectedRegion, startDate, endDate, currentPage, searchQuery, sentimentFilter, esitoFilter, motivazioneFilter]);
+
+  // Sync page input value when currentPage changes (from prev/next buttons)
+  useEffect(() => {
+    setPageInputValue(currentPage.toString());
+  }, [currentPage]);
 
   const loadRegions = async () => {
     try {
@@ -142,7 +148,7 @@ export default function DashboardPage() {
         region: selectedRegion,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
-        phone_search: phoneSearch || undefined,
+        search_query: searchQuery || undefined,
         sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined,
         esito: esitoFilter.length > 0 ? esitoFilter : undefined,
         motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
@@ -162,7 +168,7 @@ export default function DashboardPage() {
     setStartDate("");
     setEndDate("");
     setSelectedRegion("All Region");
-    setPhoneSearch("");
+    setSearchQuery("");
     setSentimentFilter([]);
     setEsitoFilter([]);
     setMotivazioneFilter([]);
@@ -376,23 +382,23 @@ export default function DashboardPage() {
               Chiamate Recenti
             </CardTitle>
             <div className="flex items-center gap-3">
-              {/* Phone Search */}
+              {/* Search by Phone or Call ID */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Cerca telefono..."
-                  value={phoneSearch}
+                  placeholder="Cerca telefono o ID..."
+                  value={searchQuery}
                   onChange={(e) => {
-                    setPhoneSearch(e.target.value);
+                    setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="pl-9 pr-8 h-9 w-48 border-gray-200 focus:border-blue-400 focus:ring-blue-100"
+                  className="pl-9 pr-8 h-9 w-52 border-gray-200 focus:border-blue-400 focus:ring-blue-100"
                 />
-                {phoneSearch && (
+                {searchQuery && (
                   <button
                     onClick={() => {
-                      setPhoneSearch("");
+                      setSearchQuery("");
                       setCurrentPage(1);
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -534,10 +540,39 @@ export default function DashboardPage() {
                       <ChevronLeft className="h-4 w-4" />
                       <span className="hidden sm:inline">Precedente</span>
                     </Button>
-                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200">
-                      <span className="text-sm font-semibold text-blue-900">
-                        {currentPage}
-                      </span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        value={pageInputValue}
+                        onChange={(e) => {
+                          // Only update the input value, don't navigate yet
+                          setPageInputValue(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const page = parseInt(pageInputValue);
+                            if (page >= 1 && page <= totalPages) {
+                              setCurrentPage(page);
+                            } else {
+                              // Reset to current page if invalid
+                              setPageInputValue(currentPage.toString());
+                            }
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          const page = parseInt(pageInputValue);
+                          if (page >= 1 && page <= totalPages) {
+                            setCurrentPage(page);
+                          } else {
+                            // Reset to current page if invalid
+                            setPageInputValue(currentPage.toString());
+                          }
+                        }}
+                        className="w-14 h-7 text-center text-sm font-semibold text-blue-900 border-blue-200 focus:border-blue-400 focus:ring-blue-100 p-1"
+                      />
                       <span className="text-sm text-blue-600">/</span>
                       <span className="text-sm font-medium text-blue-700">
                         {totalPages}
@@ -566,6 +601,11 @@ export default function DashboardPage() {
             <DialogTitle className="flex items-center gap-2 text-blue-900">
               <FileText className="h-5 w-5 text-blue-600" />
               Dettagli Chiamata
+              {selectedCall?.call_id && (
+                <Badge variant="outline" className="ml-2 font-mono text-xs">
+                  ID: {selectedCall.call_id}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedCall && (

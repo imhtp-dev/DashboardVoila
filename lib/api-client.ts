@@ -438,7 +438,7 @@ export const dashboardApi = {
     region?: string;
     start_date?: string;
     end_date?: string;
-    phone_search?: string;
+    search_query?: string;
     sentiment?: string[];
     esito?: string[];
     motivazione?: string[];
@@ -449,7 +449,7 @@ export const dashboardApi = {
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
-    if (params?.phone_search) queryParams.append('phone_search', params.phone_search);
+    if (params?.search_query) queryParams.append('search_query', params.search_query);
     // Column filters (sent as comma-separated values)
     if (params?.sentiment && params.sentiment.length > 0) queryParams.append('sentiment', params.sentiment.join(','));
     if (params?.esito && params.esito.length > 0) queryParams.append('esito', params.esito.join(','));

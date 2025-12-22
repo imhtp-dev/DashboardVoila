@@ -57,6 +57,9 @@ export async function getDashboardStats(params?: {
     // Apply region filter
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     // Apply date filters
@@ -147,6 +150,9 @@ async function getChartData(params?: {
 
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     const { data, error } = await query
@@ -227,6 +233,9 @@ export async function getCalls(params?: {
     // Apply region filter
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     // Apply date filters
@@ -390,6 +399,9 @@ export async function getAdditionalStats(params?: {
     // Apply filters
     if (params?.region && params.region !== 'All Region') {
       baseQuery = baseQuery.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      baseQuery = baseQuery.not('region', 'is', null).neq('region', 'N/A')
     }
 
     if (params?.start_date && params?.end_date) {
@@ -492,6 +504,9 @@ export async function getCallOutcomeTrend(params?: {
     // Apply filters
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     if (params?.start_date && params?.end_date) {
@@ -570,6 +585,9 @@ export async function getSentimentTrend(params?: {
     // Apply filters
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     if (params?.start_date && params?.end_date) {
@@ -645,6 +663,9 @@ export async function getCallOutcomeStats(params?: {
     // Apply filters
     if (params?.region && params.region !== 'All Region') {
       query = query.eq('region', params.region)
+    } else {
+      // For "All Region", exclude records with NULL or N/A region to ensure consistency
+      query = query.not('region', 'is', null).neq('region', 'N/A')
     }
 
     if (params?.start_date && params?.end_date) {
