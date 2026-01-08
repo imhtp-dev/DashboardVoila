@@ -166,8 +166,8 @@ export default function KPIPage() {
       })));
 
       // Chart 2: TRASFERITA - Multiple motivazioni (yellow shades) - case insensitive
-      const transferitaMotivazioni = ["mancata comprensione", "argomento sconosciuto", "richiesta paziente"];
-      const transferitaColors = ["#fbbf24", "#f59e0b", "#d97706"]; // Different yellow shades
+      const transferitaMotivazioni = ["mancata comprensione", "argomento sconosciuto", "richiesta paziente", "prenotazione"];
+      const transferitaColors = ["#fbbf24", "#f59e0b", "#d97706", "#b45309"]; // Different yellow shades
       const transferitaData = combined.filter(
         (item) => item.esito_chiamata === "TRASFERITA" &&
           transferitaMotivazioni.includes(item.motivazione?.toLowerCase())
