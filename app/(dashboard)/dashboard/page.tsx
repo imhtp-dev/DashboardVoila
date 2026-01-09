@@ -75,6 +75,7 @@ const MOTIVAZIONE_OPTIONS = [
   { value: "Mancata comprensione", label: "Mancata comprensione" },
   { value: "Problema Tecnico", label: "Problema Tecnico" },
   { value: "Fuori orario", label: "Fuori orario" },
+  { value: "Prenotazione", label: "Prenotazione" },
   { value: "N/A", label: "N/A" },
 ];
 
