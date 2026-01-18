@@ -478,6 +478,25 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
+  async getBookingCount(params?: { region?: string; start_date?: string; end_date?: string }): Promise<number> {
+    const queryParams = new URLSearchParams();
+    if (params?.region) queryParams.append('region', params.region);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+
+    const url = `${API_BASE_URL}/dashboard-booking-count${queryParams.toString() ? `?${queryParams}` : ''}`;
+    try {
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
+      const data = await handleResponse<{ count: number }>(response);
+      return data.count || 0;
+    } catch (error) {
+      console.error('Error fetching booking count:', error);
+      return 0;
+    }
+  },
+
   async getVoiceAgents(): Promise<VoiceAgent[]> {
     const response = await fetch(`${API_BASE_URL}/dashboard-voice-agents`, {
       headers: getAuthHeaders(),

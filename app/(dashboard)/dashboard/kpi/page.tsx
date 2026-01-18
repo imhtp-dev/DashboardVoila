@@ -27,6 +27,34 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, L
 import { dashboardApi, type Region } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Helper function to render percentage label on pie slices
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
+  if (value === 0 || percent < 0.02) return null; // Don't show label for very small slices (<2%)
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '11px', fontWeight: 'bold' }}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+// Helper for solid pie charts (no inner radius)
+const renderSolidPieLabel = ({ cx, cy, midAngle, outerRadius, percent, value }: any) => {
+  if (value === 0 || percent < 0.02) return null;
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '12px', fontWeight: 'bold' }}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
 export default function KPIPage() {
   const [selectedRegion, setSelectedRegion] = useState("All Region");
   const [startDate, setStartDate] = useState("");
@@ -65,6 +93,11 @@ export default function KPIPage() {
   const loadRegions = async () => {
     try {
       const data = await dashboardApi.getRegions();
+      // Ensure Piemonte is always available in regions
+      const hasPiemonte = data.some(r => r.value === "Piemonte");
+      if (!hasPiemonte) {
+        data.push({ value: "Piemonte", label: "Piemonte" });
+      }
       setRegions(data);
     } catch (err) {
       console.error("Error loading regions:", err);
@@ -469,7 +502,7 @@ export default function KPIPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={false}
+                      label={renderSolidPieLabel}
                       outerRadius={85}
                       fill="#8884d8"
                       dataKey="count"
@@ -525,7 +558,7 @@ export default function KPIPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={false}
+                      label={renderSolidPieLabel}
                       outerRadius={85}
                       fill="#8884d8"
                       dataKey="count"
@@ -584,8 +617,8 @@ export default function KPIPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={false}
-                  innerRadius={60}
+                  label={renderCustomLabel}
+                  innerRadius={50}
                   outerRadius={85}
                   fill="#8884d8"
                   dataKey="count"
@@ -651,8 +684,8 @@ export default function KPIPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={false}
-                  innerRadius={60}
+                  label={renderCustomLabel}
+                  innerRadius={50}
                   outerRadius={85}
                   fill="#8884d8"
                   dataKey="count"
@@ -722,8 +755,8 @@ export default function KPIPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={false}
-                  innerRadius={60}
+                  label={renderCustomLabel}
+                  innerRadius={50}
                   outerRadius={85}
                   fill="#8884d8"
                   dataKey="count"
@@ -789,8 +822,8 @@ export default function KPIPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={false}
-                  innerRadius={60}
+                  label={renderCustomLabel}
+                  innerRadius={50}
                   outerRadius={85}
                   fill="#8884d8"
                   dataKey="count"

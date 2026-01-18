@@ -48,9 +48,11 @@ import {
   AlertCircle,
   TrendingDown,
   LucideIcon,
-  Loader2
+  Loader2,
+  CalendarCheck
 } from "lucide-react";
 import { dashboardApi, type DashboardStats, type Region, type CallListResponse, type CallItem } from "@/lib/api-client";
+import { getBookingCount } from "@/lib/dashboard-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ColumnFilter } from "@/components/dashboard/column-filter";
 
@@ -99,6 +101,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [calls, setCalls] = useState<CallListResponse | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [bookingCount, setBookingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -123,6 +126,11 @@ export default function DashboardPage() {
   const loadRegions = async () => {
     try {
       const data = await dashboardApi.getRegions();
+      // Ensure Piemonte is always available in regions
+      const hasPiemonte = data.some(r => r.value === "Piemonte");
+      if (!hasPiemonte) {
+        data.push({ value: "Piemonte", label: "Piemonte" });
+      }
       setRegions(data);
     } catch (err) {
       console.error("Error loading regions:", err);
@@ -155,6 +163,14 @@ export default function DashboardPage() {
         motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
       });
       setCalls(callsData);
+
+      // Load booking count
+      const bookings = await getBookingCount({
+        region: selectedRegion,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      });
+      setBookingCount(bookings);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Errore nel caricamento dei dati";
@@ -326,10 +342,10 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {isLoading && !stats ? (
           <>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <Card key={i} className="border border-gray-200/60">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -368,6 +384,12 @@ export default function DashboardPage() {
               value={`${(stats?.avg_duration_minutes || 0).toFixed(1)} min`}
               icon={TrendingUp}
               iconColor="text-yellow-600"
+            />
+            <StatCard
+              title="Prenotazione"
+              value={bookingCount.toLocaleString()}
+              icon={CalendarCheck}
+              iconColor="text-teal-600"
             />
           </>
         )}

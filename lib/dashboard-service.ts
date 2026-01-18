@@ -31,6 +31,74 @@ function buildDateFilter(startDate?: string, endDate?: string) {
 // ==================== Dashboard Queries ====================
 
 /**
+ * Get Booking Count
+ * Counts rows in tb_stat where booking_code is not null
+ * Uses raw fetch to Supabase REST API to avoid type issues
+ */
+export async function getBookingCount(params?: {
+  region?: string
+  start_date?: string
+  end_date?: string
+}): Promise<number> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+    // Build query parameters for PostgREST
+    let url = `${supabaseUrl}/rest/v1/tb_stat?select=booking_code&booking_code=not.is.null`
+
+    // Apply region filter (only if specific region selected)
+    if (params?.region && params.region !== 'All Region') {
+      url += `&region=eq.${encodeURIComponent(params.region)}`
+    }
+
+    // Apply date filters
+    if (params?.start_date && params?.end_date) {
+      url += `&started_at=gte.${params.start_date}T00:00:00`
+      url += `&started_at=lte.${params.end_date}T23:59:59`
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Booking count API error:', response.status, errorText)
+      throw new Error(errorText)
+    }
+
+    // Get count from Content-Range header
+    const contentRange = response.headers.get('content-range')
+    console.log('Content-Range header:', contentRange)
+
+    if (contentRange) {
+      // Format: "0-9/100" where 100 is total count
+      const match = contentRange.match(/\/(\d+)/)
+      if (match) {
+        const count = parseInt(match[1], 10)
+        console.log('Booking count result:', count)
+        return count
+      }
+    }
+
+    // Fallback: count the returned data
+    const data = await response.json()
+    console.log('Booking data:', data)
+    return Array.isArray(data) ? data.length : 0
+  } catch (error) {
+    console.error('Error loading booking count:', error)
+    return 0
+  }
+}
+
+/**
  * Get Dashboard Statistics
  *
  * Original SQL from dashboard.py:89-96:

@@ -310,6 +310,7 @@ export default function UtentiPage() {
                       <>
                         <SelectItem value="master">Master User</SelectItem>
                         <SelectItem value="Lombardia">Lombardia User</SelectItem>
+                        <SelectItem value="Piemonte">Piemonte User</SelectItem>
                       </>
                     )}
                     {/* Regular users only see their own region */}
@@ -374,13 +375,14 @@ export default function UtentiPage() {
               </div>
             </div>
             <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-full sm:w-[180px] border-gray-200 hover:border-blue-300 transition-colors">
+              <SelectTrigger className="w-full sm:w-[180px] border-gray-200 hover:border-blue-300 transition-colors bg-white">
                 <SelectValue placeholder="Tutti i ruoli" />
               </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+              <SelectContent>
                 <SelectItem value="all">Tutti i ruoli</SelectItem>
                 <SelectItem value="master">Master</SelectItem>
                 <SelectItem value="Lombardia">Lombardia</SelectItem>
+                <SelectItem value="Piemonte">Piemonte</SelectItem>
               </SelectContent>
             </Select>
           </div>
