@@ -52,11 +52,13 @@ export async function getBookingCount(params?: {
       url += `&region=eq.${encodeURIComponent(params.region)}`
     }
 
-    // Apply date filters
+    // Apply date filters only if provided (booking_code query doesn't need default dates)
     if (params?.start_date && params?.end_date) {
       url += `&started_at=gte.${params.start_date}T00:00:00`
       url += `&started_at=lte.${params.end_date}T23:59:59`
     }
+
+    console.log('Booking count URL:', url)
 
     const response = await fetch(url, {
       method: 'GET',
@@ -114,6 +116,7 @@ export async function getDashboardStats(params?: {
   region?: string
   start_date?: string
   end_date?: string
+  call_type?: string | string[]  // 'info' | 'booking' | 'booking_incomplete' or array
 }): Promise<DashboardStats> {
   try {
     // Build query
@@ -128,6 +131,19 @@ export async function getDashboardStats(params?: {
     } else {
       // For "All Region", exclude records with NULL or N/A region to ensure consistency
       query = query.not('region', 'is', null).neq('region', 'N/A')
+    }
+
+    // Apply call_type filter
+    if (params?.call_type) {
+      if (Array.isArray(params.call_type)) {
+        // Multiple call_types (e.g., ['booking', 'booking_incomplete'])
+        query = query.in('call_type', params.call_type)
+      } else {
+        // Single call_type (e.g., 'info')
+        query = query.eq('call_type', params.call_type)
+      }
+      // Exclude N/A call_type records
+      query = query.neq('call_type', 'N/A')
     }
 
     // Apply date filters

@@ -65,6 +65,7 @@ export interface DashboardStats {
     revenue: number;
   }>;
   avg_duration_minutes: number;
+  booking_count?: number;
 }
 
 export interface Region {
@@ -419,11 +420,16 @@ export const qaApi = {
 // ==================== Dashboard ====================
 
 export const dashboardApi = {
-  async getStats(params?: { region?: string; start_date?: string; end_date?: string }): Promise<DashboardStats> {
+  async getStats(params?: { region?: string; start_date?: string; end_date?: string; call_type?: string | string[] }): Promise<DashboardStats> {
     const queryParams = new URLSearchParams();
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.call_type) {
+      // Support both single string and array of call_types
+      const callTypes = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+      queryParams.append('call_type', callTypes);
+    }
 
     const url = `${API_BASE_URL}/dashboard-stats${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {

@@ -52,7 +52,6 @@ import {
   CalendarCheck
 } from "lucide-react";
 import { dashboardApi, type DashboardStats, type Region, type CallListResponse, type CallItem } from "@/lib/api-client";
-import { getBookingCount } from "@/lib/dashboard-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ColumnFilter } from "@/components/dashboard/column-filter";
 
@@ -98,10 +97,10 @@ export default function DashboardPage() {
   const [motivazioneFilter, setMotivazioneFilter] = useState<string[]>([]);
 
   // Real data state
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [infoStats, setInfoStats] = useState<DashboardStats | null>(null);
+  const [bookingStats, setBookingStats] = useState<DashboardStats | null>(null);
   const [calls, setCalls] = useState<CallListResponse | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
-  const [bookingCount, setBookingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -140,15 +139,25 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setIsLoading(true);
     setError("");
-    
+
     try {
-      // Load stats
-      const statsData = await dashboardApi.getStats({
+      // Load info agent stats (call_type = 'info')
+      const infoStatsData = await dashboardApi.getStats({
         region: selectedRegion,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
+        call_type: 'info',
       });
-      setStats(statsData);
+      setInfoStats(infoStatsData);
+
+      // Load booking agent stats (call_type = 'booking' or 'booking_incomplete')
+      const bookingStatsData = await dashboardApi.getStats({
+        region: selectedRegion,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+        call_type: ['booking', 'booking_incomplete'],
+      });
+      setBookingStats(bookingStatsData);
 
       // Load calls
       const callsData = await dashboardApi.getCalls({
@@ -163,14 +172,6 @@ export default function DashboardPage() {
         motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
       });
       setCalls(callsData);
-
-      // Load booking count
-      const bookings = await getBookingCount({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      });
-      setBookingCount(bookings);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Errore nel caricamento dei dati";
@@ -341,58 +342,118 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {isLoading && !stats ? (
-          <>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Card key={i} className="border border-gray-200/60">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-3 flex-1">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-8 w-32" />
+      {/* Info Agent Stats */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-blue-600" />
+          Agente Info
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {isLoading && !infoStats ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="border border-gray-200/60">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-3 flex-1">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-8 w-32" />
+                      </div>
+                      <Skeleton className="h-16 w-16 rounded-2xl" />
                     </div>
-                    <Skeleton className="h-16 w-16 rounded-2xl" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </>
-        ) : (
-          <>
-            <StatCard
-              title="Totale Minuti"
-              value={`${(stats?.total_minutes || 0).toLocaleString()} min`}
-              icon={Clock}
-              iconColor="text-blue-600"
-            />
-            <StatCard
-              title="Corrispettivo Euro"
-              value={`€ ${(stats?.total_revenue || 0).toFixed(2)}`}
-              icon={Euro}
-              iconColor="text-green-600"
-            />
-            <StatCard
-              title="Nr. Chiamate"
-              value={(stats?.total_calls || 0).toLocaleString()}
-              icon={Phone}
-              iconColor="text-purple-600"
-            />
-            <StatCard
-              title="Durata Media"
-              value={`${(stats?.avg_duration_minutes || 0).toFixed(1)} min`}
-              icon={TrendingUp}
-              iconColor="text-yellow-600"
-            />
-            <StatCard
-              title="Prenotazione"
-              value={bookingCount.toLocaleString()}
-              icon={CalendarCheck}
-              iconColor="text-teal-600"
-            />
-          </>
-        )}
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Totale Minuti"
+                value={`${(infoStats?.total_minutes || 0).toLocaleString()} min`}
+                icon={Clock}
+                iconColor="text-blue-600"
+              />
+              <StatCard
+                title="Corrispettivo Euro"
+                value={`€ ${(infoStats?.total_revenue || 0).toFixed(2)}`}
+                icon={Euro}
+                iconColor="text-green-600"
+              />
+              <StatCard
+                title="Nr. Chiamate"
+                value={(infoStats?.total_calls || 0).toLocaleString()}
+                icon={Phone}
+                iconColor="text-purple-600"
+              />
+              <StatCard
+                title="Durata Media"
+                value={`${(infoStats?.avg_duration_minutes || 0).toFixed(1)} min`}
+                icon={TrendingUp}
+                iconColor="text-yellow-600"
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Booking Agent Stats */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <CalendarCheck className="h-5 w-5 text-teal-600" />
+          Agente Prenotazione
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {isLoading && !bookingStats ? (
+            <>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Card key={i} className="border border-gray-200/60">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-3 flex-1">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-8 w-32" />
+                      </div>
+                      <Skeleton className="h-16 w-16 rounded-2xl" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Totale Minuti"
+                value={`${(bookingStats?.total_minutes || 0).toLocaleString()} min`}
+                icon={Clock}
+                iconColor="text-blue-600"
+              />
+              <StatCard
+                title="Corrispettivo Euro"
+                value={`€ ${(bookingStats?.total_revenue || 0).toFixed(2)}`}
+                icon={Euro}
+                iconColor="text-green-600"
+              />
+              <StatCard
+                title="Nr. Chiamate"
+                value={(bookingStats?.total_calls || 0).toLocaleString()}
+                icon={Phone}
+                iconColor="text-purple-600"
+              />
+              <StatCard
+                title="Durata Media"
+                value={`${(bookingStats?.avg_duration_minutes || 0).toFixed(1)} min`}
+                icon={TrendingUp}
+                iconColor="text-yellow-600"
+              />
+              <StatCard
+                title="Prenotazione"
+                value={(bookingStats?.booking_count || 0).toLocaleString()}
+                icon={CalendarCheck}
+                iconColor="text-teal-600"
+              />
+            </>
+          )}
+        </div>
       </div>
 
 

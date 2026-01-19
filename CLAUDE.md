@@ -120,6 +120,57 @@ The app has **dual data access patterns**:
 
 **Note:** The application originally connected to a FastAPI backend (`../app.py` on port 8745 with MySQL). This has been migrated to Supabase.
 
+### Supabase Edge Functions
+
+Edge Functions are located in `supabase/functions/` directory. **When adding new database filters or query parameters, you must update both:**
+
+1. **Frontend** (`lib/api-client.ts`) - Add parameter to API client
+2. **Edge Function** (`supabase/functions/{function-name}/index.ts`) - Add filter logic to queries
+
+**Structure:**
+```
+supabase/functions/
+├── dashboard-stats/          # Dashboard statistics (calls, revenue, minutes)
+├── dashboard-calls/          # Call list with pagination
+├── dashboard-call-summary/   # Single call details
+├── dashboard-regions/        # Available regions
+├── auth-login/               # Authentication
+├── users-list/               # User management
+├── qa-list-by-region/        # Q&A entries
+└── _shared/                  # Shared utilities (cors, auth, supabase client)
+```
+
+**Deploying Edge Functions:**
+```bash
+# Deploy a single function (--no-verify-jwt required for public access)
+supabase functions deploy dashboard-stats --no-verify-jwt
+
+# Deploy all functions
+supabase functions deploy --no-verify-jwt
+```
+
+**Example: Adding a new filter parameter**
+
+1. Update `api-client.ts`:
+```typescript
+async getStats(params?: { region?: string; call_type?: string | string[] }) {
+  if (params?.call_type) {
+    const types = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+    queryParams.append('call_type', types);
+  }
+}
+```
+
+2. Update Edge Function `index.ts`:
+```typescript
+const callTypeParam = url.searchParams.get('call_type');
+const callTypes = callTypeParam ? callTypeParam.split(',') : null;
+
+if (callTypes && callTypes.length > 0) {
+  query = query.in('call_type', callTypes);
+}
+```
+
 #### 3. Route Groups with Shared Layouts
 
 Next.js App Router uses route groups for layout sharing:

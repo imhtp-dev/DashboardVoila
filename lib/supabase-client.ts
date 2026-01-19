@@ -44,6 +44,8 @@ export type Database = {
           patient_intent: string | null
           summary: string | null
           transcript: string | null
+          call_type: string | null  // 'info' | 'booking' | 'booking_incomplete' | 'N/A'
+          booking_code: string | null
         }
       }
       tb_voice_agent: {

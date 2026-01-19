@@ -188,14 +188,16 @@ export default function KPIPage() {
       // Process combined stats for three separate charts
       const combined = outcomeStats.combined_stats || [];
 
-      // Chart 1: COMPLETATA - Info fornite (single value, green) - case insensitive
+      // Chart 1: COMPLETATA - Info fornite + Pren. effettuata (green shades) - case insensitive
+      const completataMotivazioni = ["info fornite", "pren. effettuata"];
+      const completataColors = ["#10b981", "#059669"]; // Different green shades
       const completataData = combined.filter(
-        (item) => item.esito_chiamata === "COMPLETATA" && item.motivazione?.toLowerCase() === "info fornite"
+        (item) => item.esito_chiamata === "COMPLETATA" && completataMotivazioni.includes(item.motivazione?.toLowerCase())
       );
       setCompletataStats(completataData.map((item) => ({
         motivazione: item.motivazione,
         count: item.count,
-        color: "#10b981" // Green
+        color: completataColors[completataMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#10b981"
       })));
 
       // Chart 2: TRASFERITA - Multiple motivazioni (yellow shades) - case insensitive
