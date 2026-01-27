@@ -30,6 +30,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getQuestionClusters, getClusterDetails } from "@/lib/frequent-questions-service";
 import type { QuestionCluster, ClusterDetail } from "@/types";
 
@@ -268,7 +269,7 @@ export default function DomandeFrequentiPage() {
 
       {/* Details Dialog */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-blue-50 via-white to-purple-50 border-blue-200 shadow-2xl backdrop-blur-sm">
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto bg-gradient-to-br from-blue-50 via-white to-purple-50 border-blue-200 shadow-2xl backdrop-blur-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-900">
               <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -297,48 +298,48 @@ export default function DomandeFrequentiPage() {
               <p className="text-gray-500">Nessun dettaglio disponibile per questo cluster</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 overflow-x-auto mt-4">
-              <Table className="min-w-full">
-                <TableHeader className="bg-gray-50/50">
+            <ScrollArea className="rounded-lg border border-gray-200 mt-4 h-[60vh]" showHorizontal>
+              <Table>
+                <TableHeader className="bg-gray-50/50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="font-semibold">
+                    <TableHead className="font-semibold whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Phone className="h-4 w-4" />
                         Telefono
                       </div>
                     </TableHead>
-                    <TableHead className="font-semibold">
+                    <TableHead className="font-semibold whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         Data
                       </div>
                     </TableHead>
-                    <TableHead className="font-semibold">Sentiment</TableHead>
-                    <TableHead className="font-semibold">Esito Chiamata</TableHead>
-                    <TableHead className="font-semibold">Domanda Specifica</TableHead>
+                    <TableHead className="font-semibold whitespace-nowrap">Sentiment</TableHead>
+                    <TableHead className="font-semibold whitespace-nowrap">Esito Chiamata</TableHead>
+                    <TableHead className="font-semibold whitespace-nowrap">Domanda Specifica</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {clusterDetails.map((detail, idx) => (
                     <TableRow key={idx} className="hover:bg-blue-50/30 transition-colors">
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         {detail.phone_number}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         {formatDate(detail.started_at)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant={getSentimentVariant(detail.sentiment)}>
                           {detail.sentiment}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant={getEsitoVariant(detail.esito_chiamata)}>
                           {detail.esito_chiamata}
                         </Badge>
                       </TableCell>
-                      <TableCell className="min-w-[300px] max-w-lg">
-                        <p className="text-sm text-gray-700 whitespace-normal break-words">
+                      <TableCell className="min-w-[300px]">
+                        <p className="text-sm text-gray-700">
                           {detail.domanda_specifica}
                         </p>
                       </TableCell>
@@ -346,7 +347,7 @@ export default function DomandeFrequentiPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
