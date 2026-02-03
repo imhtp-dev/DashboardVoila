@@ -66,6 +66,48 @@ button[class*="outline"] {
   background: #d1d5db;
 }
 
+/* Force scrollbars to always be visible */
+.scrollbar-always-visible {
+  overflow: scroll !important;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #94a3b8 #f1f5f9; /* Firefox thumb and track */
+}
+
+.scrollbar-always-visible::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.scrollbar-always-visible::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 5px;
+}
+
+.scrollbar-always-visible::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 5px;
+  border: 2px solid #f1f5f9;
+}
+
+.scrollbar-always-visible::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.scrollbar-always-visible::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Scrollbar at top - flip container and content */
+.scrollbar-top {
+  transform: rotateX(180deg);
+  overflow-x: auto;
+}
+
+.scrollbar-top > * {
+  transform: rotateX(180deg);
+}
+
 /* Custom animations */
 @keyframes fade-in {
   from {

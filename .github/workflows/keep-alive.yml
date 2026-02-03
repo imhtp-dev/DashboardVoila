@@ -1,0 +1,16 @@
+name: Keep Azure Web App Alive
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"  # Every 14 minutes
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl -sf --max-time 30 \
+            "https://voilavoicedashboardcerba1-gaafdfhpawcwa5ek.francecentral-01.azurewebsites.net/api/health" \
+            && echo "OK" || echo "FAILED"
