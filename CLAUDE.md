@@ -277,3 +277,126 @@ Dummy data in [lib/dummy-data.ts](lib/dummy-data.ts) is used as fallback. The pr
 1. Remove dummy data imports
 2. Replace with [api-client.ts](lib/api-client.ts) and [dashboard-service.ts](lib/dashboard-service.ts) calls
 3. Add proper error handling and loading states
+
+## Performance Guidelines for Dashboard/KPI Features
+
+When adding new stats, graphs, or data visualizations to the dashboard or KPI pages, follow these rules:
+
+### Rule 1: Use Postgres RPC Functions (NOT pagination loops)
+
+**NEVER** fetch all rows and aggregate in JavaScript. This causes slow loading (60s+).
+
+**BAD - Pagination loop in Edge Function:**
+```typescript
+// DON'T DO THIS
+let allData = [];
+while (true) {
+  const { data } = await supabase.from('tb_stat')
+    .select('*')
+    .range(offset, offset + 1000);
+  allData = allData.concat(data);
+  if (data.length < 1000) break;
+  offset += 1000;
+}
+// Then aggregate in JS...
+```
+
+**GOOD - Postgres RPC function:**
+```sql
+-- Create in supabase/rls-policies.sql
+CREATE OR REPLACE FUNCTION get_my_stats(p_region text, p_start_date text, p_end_date text)
+RETURNS jsonb
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Do GROUP BY, COUNT, SUM, AVG in SQL
+  SELECT jsonb_agg(row_to_json(t))
+  FROM (
+    SELECT column, COUNT(*) as count
+    FROM tb_stat
+    WHERE started_at >= p_start_date::timestamp
+    GROUP BY column
+  ) t;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_my_stats(text, text, text) TO anon;
+GRANT EXECUTE ON FUNCTION get_my_stats(text, text, text) TO authenticated;
+```
+
+```typescript
+// Edge Function calls RPC
+const { data } = await supabase.rpc('get_my_stats', {
+  p_region: region,
+  p_start_date: startDate,
+  p_end_date: endDate
+});
+```
+
+### Rule 2: Parallelize Frontend API Calls
+
+**NEVER** use sequential `await` calls. Use `Promise.all()` for parallel execution.
+
+**BAD - Sequential:**
+```typescript
+const stats1 = await dashboardApi.getStats1();
+const stats2 = await dashboardApi.getStats2();
+const stats3 = await dashboardApi.getStats3();
+// Total time = sum of all three
+```
+
+**GOOD - Parallel:**
+```typescript
+const [stats1, stats2, stats3] = await Promise.all([
+  dashboardApi.getStats1(),
+  dashboardApi.getStats2(),
+  dashboardApi.getStats3(),
+]);
+// Total time = slowest one
+```
+
+### Rule 3: Standard Filter Parameters
+
+All dashboard RPC functions should accept these parameters:
+- `p_region text` - "All Region" or specific region name
+- `p_start_date text` - ISO date string (defaults to '2024-12-01')
+- `p_end_date text` - ISO date string (defaults to today)
+- `p_call_types text[]` - Optional array for call type filtering
+
+### Rule 4: Region Filter Logic
+
+Use this pattern in all queries:
+```sql
+AND (
+  (p_region = 'All Region' AND region IS NOT NULL AND region != 'N/A')
+  OR (p_region != 'All Region' AND region = p_region)
+)
+```
+
+### Rule 5: Exclude Invalid Data
+
+Always filter out N/A, NULL, empty values:
+```sql
+AND sentiment IS NOT NULL
+AND UPPER(TRIM(sentiment)) NOT IN ('N/A', 'NULL', '')
+```
+
+### Existing RPC Functions (reference)
+
+| Function | Purpose | Location |
+|----------|---------|----------|
+| `get_dashboard_stats()` | Main dashboard stats + chart data | `supabase/rls-policies.sql` |
+| `get_outcome_trend()` | Esito chiamata trend over time | `supabase/rls-policies.sql` |
+| `get_sentiment_trend()` | Sentiment trend over time | `supabase/rls-policies.sql` |
+| `get_outcome_stats()` | Pie chart stats (esito + motivazione) | `supabase/rls-policies.sql` |
+
+### Deployment Checklist for New Stats
+
+1. Create RPC function in `supabase/rls-policies.sql`
+2. Run SQL in Supabase SQL Editor
+3. Create/update Edge Function to call RPC
+4. Deploy: `supabase functions deploy function-name --no-verify-jwt`
+5. Add API method in `lib/api-client.ts`
+6. Use `Promise.all()` in frontend page

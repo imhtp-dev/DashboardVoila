@@ -109,12 +109,29 @@ export default function KPIPage() {
     setError("");
 
     try {
-      // Load additional stats for sentiment pie chart
-      const additionalStats = await dashboardApi.getAdditionalStats({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      });
+      // Load all data in parallel for faster loading
+      const [additionalStats, outcomeTrendResponse, sentimentTrendResponse, outcomeStats] = await Promise.all([
+        dashboardApi.getAdditionalStats({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+        }),
+        dashboardApi.getCallOutcomeTrend({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+        }),
+        dashboardApi.getSentimentTrend({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+        }),
+        dashboardApi.getCallOutcomeStats({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+        }),
+      ]);
 
       // Map sentiment stats with colors
       const sentimentColors: Record<string, string> = {
@@ -126,13 +143,6 @@ export default function KPIPage() {
         ...s,
         color: sentimentColors[s.sentiment?.toLowerCase()] || "#6b7280"
       })));
-
-      // Load outcome trend data for line chart
-      const outcomeTrendResponse = await dashboardApi.getCallOutcomeTrend({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      });
 
       // Transform outcome trend data for line chart
       const outcomeByDate: Record<string, { COMPLETATA: number; TRASFERITA: number; "NON COMPLETATA": number }> = {};
@@ -146,13 +156,6 @@ export default function KPIPage() {
       });
       setOutcomeTrendData(Object.keys(outcomeByDate).sort().map(date => ({ date, ...outcomeByDate[date] })));
 
-      // Load sentiment trend data for line chart
-      const sentimentTrendResponse = await dashboardApi.getSentimentTrend({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      });
-
       // Transform sentiment trend data for line chart
       const sentimentByDate: Record<string, { positive: number; neutral: number; negative: number }> = {};
       sentimentTrendResponse.data.forEach((item: any) => {
@@ -164,13 +167,6 @@ export default function KPIPage() {
         }
       });
       setSentimentTrendData(Object.keys(sentimentByDate).sort().map(date => ({ date, ...sentimentByDate[date] })));
-
-      // Load call outcome stats for motivazione and esito pie charts
-      const outcomeStats = await dashboardApi.getCallOutcomeStats({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-      });
 
       // Map esito stats with specific colors (including RIAGGANCIATO for hung-up calls)
       const esitoColors: Record<string, string> = {

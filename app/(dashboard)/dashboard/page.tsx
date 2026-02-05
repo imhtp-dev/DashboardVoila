@@ -141,36 +141,38 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      // Load info agent stats (call_type = 'info')
-      const infoStatsData = await dashboardApi.getStats({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        call_type: 'info',
-      });
+      // Load all data in parallel for faster loading
+      const [infoStatsData, bookingStatsData, callsData] = await Promise.all([
+        // Info agent stats (call_type = 'info')
+        dashboardApi.getStats({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          call_type: 'info',
+        }),
+        // Booking agent stats (call_type = 'booking' or 'booking_incomplete')
+        dashboardApi.getStats({
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          call_type: ['booking', 'booking_incomplete'],
+        }),
+        // Calls list
+        dashboardApi.getCalls({
+          limit: pageSize,
+          offset: (currentPage - 1) * pageSize,
+          region: selectedRegion,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          search_query: searchQuery || undefined,
+          sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined,
+          esito: esitoFilter.length > 0 ? esitoFilter : undefined,
+          motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
+        }),
+      ]);
+
       setInfoStats(infoStatsData);
-
-      // Load booking agent stats (call_type = 'booking' or 'booking_incomplete')
-      const bookingStatsData = await dashboardApi.getStats({
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        call_type: ['booking', 'booking_incomplete'],
-      });
       setBookingStats(bookingStatsData);
-
-      // Load calls
-      const callsData = await dashboardApi.getCalls({
-        limit: pageSize,
-        offset: (currentPage - 1) * pageSize,
-        region: selectedRegion,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        search_query: searchQuery || undefined,
-        sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined,
-        esito: esitoFilter.length > 0 ? esitoFilter : undefined,
-        motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
-      });
       setCalls(callsData);
 
     } catch (err) {
