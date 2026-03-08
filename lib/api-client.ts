@@ -510,7 +510,7 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
-  async getAdditionalStats(params?: { region?: string; start_date?: string; end_date?: string }): Promise<AdditionalStats> {
+  async getAdditionalStats(params?: { region?: string; start_date?: string; end_date?: string; call_type?: string | string[] }): Promise<AdditionalStats> {
     // Use dashboard-stats which returns all necessary stats
     return this.getStats(params) as Promise<any>;
   },
@@ -520,11 +520,15 @@ export const dashboardApi = {
     return Promise.resolve({} as ClinicalKPIs);
   },
 
-  async getCallOutcomeTrend(params?: { region?: string; start_date?: string; end_date?: string }): Promise<TrendResponse> {
+  async getCallOutcomeTrend(params?: { region?: string; start_date?: string; end_date?: string; call_type?: string | string[] }): Promise<TrendResponse> {
     const queryParams = new URLSearchParams();
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.call_type) {
+      const callTypes = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+      queryParams.append('call_type', callTypes);
+    }
 
     const url = `${API_BASE_URL}/dashboard-outcome-trend${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {
@@ -533,11 +537,15 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
-  async getSentimentTrend(params?: { region?: string; start_date?: string; end_date?: string }): Promise<TrendResponse> {
+  async getSentimentTrend(params?: { region?: string; start_date?: string; end_date?: string; call_type?: string | string[] }): Promise<TrendResponse> {
     const queryParams = new URLSearchParams();
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.call_type) {
+      const callTypes = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+      queryParams.append('call_type', callTypes);
+    }
 
     const url = `${API_BASE_URL}/dashboard-sentiment-trend${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {
@@ -546,11 +554,15 @@ export const dashboardApi = {
     return handleResponse(response);
   },
 
-  async getCallOutcomeStats(params?: { region?: string; start_date?: string; end_date?: string }): Promise<CallOutcomeStats> {
+  async getCallOutcomeStats(params?: { region?: string; start_date?: string; end_date?: string; call_type?: string | string[] }): Promise<CallOutcomeStats> {
     const queryParams = new URLSearchParams();
     if (params?.region) queryParams.append('region', params.region);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.call_type) {
+      const callTypes = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+      queryParams.append('call_type', callTypes);
+    }
 
     const url = `${API_BASE_URL}/dashboard-outcome-stats${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {

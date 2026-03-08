@@ -44,8 +44,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# supabase
-/supabase/
+# supabase (track edge functions + SQL; ignore generated files)
+/supabase/.temp/
+
+# Windows Zone.Identifier artifacts
+*:Zone.Identifier
 
 # Claude Code
 CLAUDE.md

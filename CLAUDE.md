@@ -254,6 +254,18 @@ The application is **region-aware**. Most features filter by region (Piemonte, L
 - Dashboard stats can be filtered by region
 - Users are assigned to specific regions
 
+### Agent Type by Region
+
+The `call_type` column in `tb_stat` indicates agent type (`info`, `booking`, `booking_incomplete`).
+
+| Region | Supported Agents | Notes |
+|--------|-----------------|-------|
+| Piemonte | INFO + BOOKING | First region with booking agent. `call_type` properly populated. |
+| Lombardia | INFO only | Booking agent not active. `call_type` column is empty/NULL — Lombardia's agent code does not set `call_type`. Treat NULL/empty as `info`. |
+| Other regions | INFO only (default) | Future regions may add booking support. |
+
+**Important:** When filtering by `call_type`, always use `COALESCE(NULLIF(call_type, 'N/A'), 'info')` to handle NULL/N/A values as 'info'.
+
 Backend function names include region suffixes:
 - `knowledge_base_lombardia`
 - `get_price_agonistic_visit_lombardia`

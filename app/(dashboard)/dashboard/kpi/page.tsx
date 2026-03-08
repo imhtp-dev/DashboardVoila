@@ -27,9 +27,31 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, L
 import { dashboardApi, type Region } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Regions that support booking agent
+const REGION_BOOKING_SUPPORT: Record<string, boolean> = {
+  'Piemonte': true,
+};
+
+type AgentType = 'all' | 'info' | 'booking';
+
+// Map agent type selection to call_type API param
+function getCallTypeParam(agentType: AgentType): string | string[] | undefined {
+  switch (agentType) {
+    case 'info': return 'info';
+    case 'booking': return ['booking', 'booking_incomplete'];
+    case 'all': return undefined;
+  }
+}
+
+// Check if agent type dropdown should be shown for selected region
+function regionSupportsBooking(region: string): boolean {
+  if (region === 'All Region') return true;
+  return !!REGION_BOOKING_SUPPORT[region];
+}
+
 // Helper function to render percentage label on pie slices
 const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
-  if (value === 0 || percent < 0.02) return null; // Don't show label for very small slices (<2%)
+  if (value === 0 || percent < 0.02) return null;
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -57,6 +79,7 @@ const renderSolidPieLabel = ({ cx, cy, midAngle, outerRadius, percent, value }: 
 
 export default function KPIPage() {
   const [selectedRegion, setSelectedRegion] = useState("All Region");
+  const [selectedAgentType, setSelectedAgentType] = useState<AgentType>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -77,6 +100,16 @@ export default function KPIPage() {
   const [nonCompletataStats, setNonCompletataStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
   const [riaganciatoStats, setRiaganciatoStats] = useState<Array<{ motivazione: string; count: number; color: string }>>([]);
 
+  const showAgentFilter = regionSupportsBooking(selectedRegion);
+  const isBookingAgent = selectedAgentType === 'booking';
+
+  // Auto-reset agent type when switching to region without booking support
+  useEffect(() => {
+    if (!regionSupportsBooking(selectedRegion) && selectedAgentType !== 'all') {
+      setSelectedAgentType('all');
+    }
+  }, [selectedRegion]);
+
   // Load initial data
   useEffect(() => {
     loadRegions();
@@ -88,12 +121,11 @@ export default function KPIPage() {
     if (regions.length > 0) {
       loadKPIData();
     }
-  }, [selectedRegion, startDate, endDate]);
+  }, [selectedRegion, startDate, endDate, selectedAgentType]);
 
   const loadRegions = async () => {
     try {
       const data = await dashboardApi.getRegions();
-      // Ensure Piemonte is always available in regions
       const hasPiemonte = data.some(r => r.value === "Piemonte");
       if (!hasPiemonte) {
         data.push({ value: "Piemonte", label: "Piemonte" });
@@ -108,28 +140,33 @@ export default function KPIPage() {
     setIsLoading(true);
     setError("");
 
+    const callType = getCallTypeParam(selectedAgentType);
+
     try {
-      // Load all data in parallel for faster loading
       const [additionalStats, outcomeTrendResponse, sentimentTrendResponse, outcomeStats] = await Promise.all([
         dashboardApi.getAdditionalStats({
           region: selectedRegion,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
+          call_type: callType,
         }),
         dashboardApi.getCallOutcomeTrend({
           region: selectedRegion,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
+          call_type: callType,
         }),
         dashboardApi.getSentimentTrend({
           region: selectedRegion,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
+          call_type: callType,
         }),
         dashboardApi.getCallOutcomeStats({
           region: selectedRegion,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
+          call_type: callType,
         }),
       ]);
 
@@ -168,12 +205,12 @@ export default function KPIPage() {
       });
       setSentimentTrendData(Object.keys(sentimentByDate).sort().map(date => ({ date, ...sentimentByDate[date] })));
 
-      // Map esito stats with specific colors (including RIAGGANCIATO for hung-up calls)
+      // Map esito stats with specific colors
       const esitoColors: Record<string, string> = {
         "COMPLETATA": "#10b981",
         "TRASFERITA": "#f59e0b",
         "NON COMPLETATA": "#ef4444",
-        "RIAGGANCIATO": "#6b7280" // Gray for hung-up calls
+        "RIAGGANCIATO": "#6b7280"
       };
       setEsitoStats((outcomeStats.outcome_stats || []).map((e: { esito_chiamata: string; count: number }) => ({
         esito: e.esito_chiamata,
@@ -181,12 +218,19 @@ export default function KPIPage() {
         color: esitoColors[e.esito_chiamata] || "#6b7280"
       })));
 
-      // Process combined stats for three separate charts
+      // Process combined stats for four separate charts
       const combined = outcomeStats.combined_stats || [];
 
-      // Chart 1: COMPLETATA - Info fornite + Pren. effettuata (green shades) - case insensitive
-      const completataMotivazioni = ["info fornite", "pren. effettuata"];
-      const completataColors = ["#10b981", "#059669"]; // Different green shades
+      // Chart 1: COMPLETATA
+      // INFO agent: only "info fornite"
+      // BOOKING agent: only "pren. effettuata" (label shown as "Prenotazioni effettuate")
+      // ALL: show both
+      const completataMotivazioni = isBookingAgent
+        ? ["pren. effettuata"]
+        : selectedAgentType === 'info'
+          ? ["info fornite"]
+          : ["info fornite", "pren. effettuata"];
+      const completataColors = ["#10b981", "#059669"];
       const completataData = combined.filter(
         (item) => item.esito_chiamata === "COMPLETATA" && completataMotivazioni.includes(item.motivazione?.toLowerCase())
       );
@@ -196,9 +240,12 @@ export default function KPIPage() {
         color: completataColors[completataMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#10b981"
       })));
 
-      // Chart 2: TRASFERITA - Multiple motivazioni (yellow shades) - case insensitive
-      const transferitaMotivazioni = ["mancata comprensione", "argomento sconosciuto", "richiesta paziente", "prenotazione"];
-      const transferitaColors = ["#fbbf24", "#f59e0b", "#d97706", "#b45309"]; // Different yellow shades
+      // Chart 2: TRASFERITA
+      // BOOKING agent: remove "prenotazione" from categories
+      const transferitaMotivazioni = isBookingAgent
+        ? ["mancata comprensione", "argomento sconosciuto", "richiesta paziente"]
+        : ["mancata comprensione", "argomento sconosciuto", "richiesta paziente", "prenotazione"];
+      const transferitaColors = ["#fbbf24", "#f59e0b", "#d97706", "#b45309"];
       const transferitaData = combined.filter(
         (item) => item.esito_chiamata === "TRASFERITA" &&
           transferitaMotivazioni.includes(item.motivazione?.toLowerCase())
@@ -209,9 +256,9 @@ export default function KPIPage() {
         color: transferitaColors[transferitaMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#f59e0b"
       })));
 
-      // Chart 3: NON COMPLETATA - Multiple motivazioni (red shades) - case insensitive
+      // Chart 3: NON COMPLETATA
       const nonCompletataMotivazioni = ["interrotta dal paziente", "fuori orario", "problema tecnico"];
-      const nonCompletataColors = ["#f87171", "#ef4444", "#dc2626"]; // Different red shades
+      const nonCompletataColors = ["#f87171", "#ef4444", "#dc2626"];
       const nonCompletataData = combined.filter(
         (item) => item.esito_chiamata === "NON COMPLETATA" &&
           nonCompletataMotivazioni.includes(item.motivazione?.toLowerCase())
@@ -222,14 +269,14 @@ export default function KPIPage() {
         color: nonCompletataColors[nonCompletataMotivazioni.indexOf(item.motivazione?.toLowerCase())] || "#ef4444"
       })));
 
-      // Chart 4: RIAGGANCIATO - Hung-up calls (gray)
+      // Chart 4: RIAGGANCIATO
       const riaganciatoData = combined.filter(
         (item) => item.esito_chiamata === "RIAGGANCIATO"
       );
       setRiaganciatoStats(riaganciatoData.map((item) => ({
         motivazione: "Riagganciato",
         count: item.count,
-        color: "#6b7280" // Gray
+        color: "#6b7280"
       })));
 
     } catch (err) {
@@ -245,11 +292,29 @@ export default function KPIPage() {
     setStartDate("");
     setEndDate("");
     setSelectedRegion("All Region");
+    setSelectedAgentType("all");
   };
 
   const handleFilter = () => {
     loadKPIData();
   };
+
+  // Completate chart empty state label based on agent type
+  const completataEmptyLabel = isBookingAgent ? "Prenotazioni effettuate" : "Info fornite";
+
+  // Trasferita chart empty state based on agent type
+  const transferitaEmptyData = isBookingAgent
+    ? [
+        { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
+        { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
+        { motivazione: "Mancata comprensione", count: 0, color: "#d97706" },
+      ]
+    : [
+        { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
+        { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
+        { motivazione: "Mancata comprensione", count: 0, color: "#d97706" },
+        { motivazione: "Prenotazione", count: 0, color: "#b45309" },
+      ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -281,7 +346,7 @@ export default function KPIPage() {
       {/* Filters */}
       <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-sm bg-white/80">
         <CardContent className="pt-6 pb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-5">
             <div className="space-y-2.5">
               <Label className="text-sm font-semibold text-gray-700">Regione</Label>
               <Select value={selectedRegion} onValueChange={setSelectedRegion}>
@@ -297,6 +362,21 @@ export default function KPIPage() {
                 </SelectContent>
               </Select>
             </div>
+            {showAgentFilter && (
+              <div className="space-y-2.5">
+                <Label className="text-sm font-semibold text-gray-700">Tipo Agente</Label>
+                <Select value={selectedAgentType} onValueChange={(v) => setSelectedAgentType(v as AgentType)}>
+                  <SelectTrigger className="h-11 border-gray-200 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti gli Agenti</SelectItem>
+                    <SelectItem value="info">Agente Info</SelectItem>
+                    <SelectItem value="booking">Agente Prenotazione</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2.5">
               <Label className="text-sm font-semibold text-gray-700">Data Inizio</Label>
               <Input
@@ -611,7 +691,7 @@ export default function KPIPage() {
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
-                  data={completataStats.length > 0 ? completataStats : [{ motivazione: "Info fornite", count: 0, color: "#10b981" }]}
+                  data={completataStats.length > 0 ? completataStats : [{ motivazione: completataEmptyLabel, count: 0, color: "#10b981" }]}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -624,7 +704,7 @@ export default function KPIPage() {
                   strokeWidth={2}
                   stroke="#fff"
                 >
-                  {(completataStats.length > 0 ? completataStats : [{ motivazione: "Info fornite", count: 0, color: "#10b981" }]).map((entry, index) => (
+                  {(completataStats.length > 0 ? completataStats : [{ motivazione: completataEmptyLabel, count: 0, color: "#10b981" }]).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -674,11 +754,7 @@ export default function KPIPage() {
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
-                  data={transferitaStats.length > 0 ? transferitaStats : [
-                    { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
-                    { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
-                    { motivazione: "Mancata comprensione", count: 0, color: "#d97706" }
-                  ]}
+                  data={transferitaStats.length > 0 ? transferitaStats : transferitaEmptyData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -691,11 +767,7 @@ export default function KPIPage() {
                   strokeWidth={2}
                   stroke="#fff"
                 >
-                  {(transferitaStats.length > 0 ? transferitaStats : [
-                    { motivazione: "Richiesta paziente", count: 0, color: "#fbbf24" },
-                    { motivazione: "Argomento sconosciuto", count: 0, color: "#f59e0b" },
-                    { motivazione: "Mancata comprensione", count: 0, color: "#d97706" }
-                  ]).map((entry, index) => (
+                  {(transferitaStats.length > 0 ? transferitaStats : transferitaEmptyData).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
