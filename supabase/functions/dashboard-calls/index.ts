@@ -24,6 +24,8 @@ serve(async (req)=>{
     const sentimentFilter = url.searchParams.get('sentiment')?.split(',').filter(Boolean) || [];
     const esitoFilter = url.searchParams.get('esito')?.split(',').filter(Boolean) || [];
     const motivazioneFilter = url.searchParams.get('motivazione')?.split(',').filter(Boolean) || [];
+    const callTypeParam = url.searchParams.get('call_type');
+    const callTypes = callTypeParam ? callTypeParam.split(',').map(t => t.trim()) : null;
     // Enforce region-based access control
     const userRegion = currentUser.region;
     if (userRegion && userRegion !== 'master') {
@@ -72,6 +74,17 @@ serve(async (req)=>{
     if (motivazioneFilter.length > 0) {
       countQuery = countQuery.in('motivazione', motivazioneFilter);
     }
+    // Call type filter (using raw SQL via .or() to handle COALESCE for NULL → 'info')
+    if (callTypes && callTypes.length > 0) {
+      // Build filter: COALESCE(NULLIF(call_type, 'N/A'), 'info') in callTypes
+      const orConditions = callTypes.map(ct => `call_type.eq.${ct}`).join(',');
+      // If 'info' is in the filter, also include NULL and N/A call_type rows
+      if (callTypes.includes('info')) {
+        countQuery = countQuery.or(`${orConditions},call_type.is.null,call_type.eq.N/A,call_type.eq.`);
+      } else {
+        countQuery = countQuery.in('call_type', callTypes);
+      }
+    }
     const { count: totalCalls, error: countError } = await countQuery;
     if (countError) throw countError;
     // Build data query
@@ -107,6 +120,15 @@ serve(async (req)=>{
     }
     if (motivazioneFilter.length > 0) {
       dataQuery = dataQuery.in('motivazione', motivazioneFilter);
+    }
+    // Call type filter (same logic as count query)
+    if (callTypes && callTypes.length > 0) {
+      const orConditions = callTypes.map(ct => `call_type.eq.${ct}`).join(',');
+      if (callTypes.includes('info')) {
+        dataQuery = dataQuery.or(`${orConditions},call_type.is.null,call_type.eq.N/A,call_type.eq.`);
+      } else {
+        dataQuery = dataQuery.in('call_type', callTypes);
+      }
     }
     dataQuery = dataQuery.order('started_at', {
       ascending: false

@@ -55,6 +55,26 @@ import { dashboardApi, type DashboardStats, type Region, type CallListResponse, 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ColumnFilter } from "@/components/dashboard/column-filter";
 
+// Regions that support booking agent
+const REGION_BOOKING_SUPPORT: Record<string, boolean> = {
+  'Piemonte': true,
+};
+
+type AgentType = 'all' | 'info' | 'booking';
+
+function getCallTypeParam(agentType: AgentType): string | string[] | undefined {
+  switch (agentType) {
+    case 'info': return 'info';
+    case 'booking': return ['booking', 'booking_incomplete'];
+    case 'all': return undefined;
+  }
+}
+
+function regionSupportsBooking(region: string): boolean {
+  if (region === 'All Region') return true;
+  return !!REGION_BOOKING_SUPPORT[region];
+}
+
 // Filter options for columns
 const SENTIMENT_OPTIONS = [
   { value: "positive", label: "Positive", color: "bg-green-500" },
@@ -82,6 +102,7 @@ const MOTIVAZIONE_OPTIONS = [
 
 export default function DashboardPage() {
   const [selectedRegion, setSelectedRegion] = useState("All Region");
+  const [selectedAgentType, setSelectedAgentType] = useState<AgentType>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,6 +125,15 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const showAgentFilter = regionSupportsBooking(selectedRegion);
+
+  // Auto-reset agent type when switching to region without booking support
+  useEffect(() => {
+    if (!regionSupportsBooking(selectedRegion) && selectedAgentType !== 'all') {
+      setSelectedAgentType('all');
+    }
+  }, [selectedRegion]);
+
   // Load initial data
   useEffect(() => {
     loadRegions();
@@ -115,7 +145,7 @@ export default function DashboardPage() {
     if (regions.length > 0) {
       loadDashboardData();
     }
-  }, [selectedRegion, startDate, endDate, currentPage, searchQuery, sentimentFilter, esitoFilter, motivazioneFilter]);
+  }, [selectedRegion, selectedAgentType, startDate, endDate, currentPage, searchQuery, sentimentFilter, esitoFilter, motivazioneFilter]);
 
   // Sync page input value when currentPage changes (from prev/next buttons)
   useEffect(() => {
@@ -140,24 +170,30 @@ export default function DashboardPage() {
     setIsLoading(true);
     setError("");
 
+    const callType = getCallTypeParam(selectedAgentType);
+
     try {
-      // Load all data in parallel for faster loading
-      const [infoStatsData, bookingStatsData, callsData] = await Promise.all([
-        // Info agent stats (call_type = 'info')
-        dashboardApi.getStats({
-          region: selectedRegion,
-          start_date: startDate || undefined,
-          end_date: endDate || undefined,
-          call_type: 'info',
-        }),
-        // Booking agent stats (call_type = 'booking' or 'booking_incomplete')
-        dashboardApi.getStats({
-          region: selectedRegion,
-          start_date: startDate || undefined,
-          end_date: endDate || undefined,
-          call_type: ['booking', 'booking_incomplete'],
-        }),
-        // Calls list
+      // Build parallel requests based on agent type
+      const promises: [Promise<DashboardStats | null>, Promise<DashboardStats | null>, Promise<CallListResponse>] = [
+        // Info stats: fetch when 'all' or 'info'
+        selectedAgentType !== 'booking'
+          ? dashboardApi.getStats({
+              region: selectedRegion,
+              start_date: startDate || undefined,
+              end_date: endDate || undefined,
+              call_type: 'info',
+            })
+          : Promise.resolve(null),
+        // Booking stats: fetch when 'all' or 'booking'
+        selectedAgentType !== 'info'
+          ? dashboardApi.getStats({
+              region: selectedRegion,
+              start_date: startDate || undefined,
+              end_date: endDate || undefined,
+              call_type: ['booking', 'booking_incomplete'],
+            })
+          : Promise.resolve(null),
+        // Calls list — filtered by agent type
         dashboardApi.getCalls({
           limit: pageSize,
           offset: (currentPage - 1) * pageSize,
@@ -168,8 +204,11 @@ export default function DashboardPage() {
           sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined,
           esito: esitoFilter.length > 0 ? esitoFilter : undefined,
           motivazione: motivazioneFilter.length > 0 ? motivazioneFilter : undefined,
+          call_type: callType,
         }),
-      ]);
+      ];
+
+      const [infoStatsData, bookingStatsData, callsData] = await Promise.all(promises);
 
       setInfoStats(infoStatsData);
       setBookingStats(bookingStatsData);
@@ -188,6 +227,7 @@ export default function DashboardPage() {
     setStartDate("");
     setEndDate("");
     setSelectedRegion("All Region");
+    setSelectedAgentType("all");
     setSearchQuery("");
     setSentimentFilter([]);
     setEsitoFilter([]);
@@ -279,7 +319,7 @@ export default function DashboardPage() {
       {/* Filters */}
       <Card className="border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-sm bg-white/80">
         <CardContent className="pt-6 pb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${showAgentFilter ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-5`}>
             <div className="space-y-2.5">
               <Label className="text-sm font-semibold text-gray-700">Regione</Label>
               <Select value={selectedRegion} onValueChange={setSelectedRegion}>
@@ -295,6 +335,21 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
             </div>
+            {showAgentFilter && (
+              <div className="space-y-2.5">
+                <Label className="text-sm font-semibold text-gray-700">Tipo Agente</Label>
+                <Select value={selectedAgentType} onValueChange={(v) => setSelectedAgentType(v as AgentType)}>
+                  <SelectTrigger className="h-11 border-gray-200 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti gli Agenti</SelectItem>
+                    <SelectItem value="info">Agente Info</SelectItem>
+                    <SelectItem value="booking">Agente Prenotazione</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2.5">
               <Label className="text-sm font-semibold text-gray-700">Data Inizio</Label>
               <Input
@@ -345,6 +400,7 @@ export default function DashboardPage() {
       )}
 
       {/* Info Agent Stats */}
+      {selectedAgentType !== 'booking' && (
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-blue-600" />
@@ -397,8 +453,10 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Booking Agent Stats */}
+      {selectedAgentType !== 'info' && (
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
           <CalendarCheck className="h-5 w-5 text-teal-600" />
@@ -457,6 +515,7 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      )}
 
 
       {/* Recent Calls Table */}

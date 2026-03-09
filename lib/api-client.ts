@@ -448,6 +448,7 @@ export const dashboardApi = {
     sentiment?: string[];
     esito?: string[];
     motivazione?: string[];
+    call_type?: string | string[];
   }): Promise<CallListResponse> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -460,6 +461,10 @@ export const dashboardApi = {
     if (params?.sentiment && params.sentiment.length > 0) queryParams.append('sentiment', params.sentiment.join(','));
     if (params?.esito && params.esito.length > 0) queryParams.append('esito', params.esito.join(','));
     if (params?.motivazione && params.motivazione.length > 0) queryParams.append('motivazione', params.motivazione.join(','));
+    if (params?.call_type) {
+      const callTypes = Array.isArray(params.call_type) ? params.call_type.join(',') : params.call_type;
+      queryParams.append('call_type', callTypes);
+    }
 
     const url = `${API_BASE_URL}/dashboard-calls${queryParams.toString() ? `?${queryParams}` : ''}`;
     const response = await fetch(url, {
